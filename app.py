@@ -103,45 +103,8 @@ st.markdown(
     }
     
     /* Add Control Panel text next to collapse arrow - Multiple approaches */
-    .css-1rs6os::after, .css-1544g2n::after, [data-testid="collapsedControl"]::after,
-    .css-17eq0hr::after, .css-164nlkn::after, .css-1v8rj3v::after {
-        content: "Control Panel";
-        color: white;
-        font-size: 11px;
-        font-weight: 600;
-        position: absolute;
-        left: 25px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(102, 126, 234, 0.9);
-        padding: 4px 8px;
-        border-radius: 12px;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        z-index: 999;
-    }
     
-    /* Streamlit sidebar toggle button styling */
-    button[kind="secondary"] {
-        position: relative !important;
-    }
-    
-    button[kind="secondary"]::after {
-        content: "⚙️ Control Panel";
-        color: white;
-        font-size: 10px;
-        font-weight: 600;
-        position: absolute;
-        left: calc(100% + 10px);
-        top: 50%;
-        transform: translateY(-50%);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 4px 8px;
-        border-radius: 8px;
-        white-space: nowrap;
-        z-index: 1000;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
+    /* Removed Control Panel pseudo-elements and button styling */
     
     /* Custom metrics styling */
     .metric-card {
@@ -321,10 +284,7 @@ st.markdown(
 # --- Enhanced Sidebar ---
 st.sidebar.markdown(
     """
-    <div style="text-align: center; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; margin-bottom: 1rem;">
-        <h2 style="color: white; margin: 0;">⚙️ Control Panel</h2>
-        <p style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 0 0;">Configure your ML pipeline</p>
-    </div>
+    
     """,
     unsafe_allow_html=True
 )
@@ -720,7 +680,7 @@ else:
                 <ul style="color: rgba(255,255,255,0.8); text-align: left; padding-left: 1rem;">
                     <li>12+ ML algorithms</li>
                     <li>Hyperparameter tuning</li>
-                    <li>Cross-validation</li>
+                    <li>Cross-validation and GridSearchCV </li>
                     <li>Performance optimization</li>
                 </ul>
             </div>
@@ -765,16 +725,14 @@ else:
     st.markdown("### 📂 Sample Datasets Available")
     sample_datasets = [
         {"name": "🌸 Iris", "description": "Classic flower classification", "features": "4", "rows": "150"},
-        {"name": "❤️ Heart Disease", "description": "Medical diagnosis prediction", "features": "13", "rows": "918"},
+        {"name": "🚢 Titanic", "description": "Survival prediction", "features": "12", "rows": "891"},
         {"name": "🏠 Housing", "description": "Price prediction", "features": "13", "rows": "506"},
+        {"name": "❤️ Heart Disease", "description": "Heart Disease prediction", "features": "12", "rows": "919"},
         {"name": "🏦 Bank Marketing", "description": "Campaign success prediction", "features": "20", "rows": "4521"},
-        {"name": "🚗 Car Insurance", "description": "Insurance claim prediction", "features": "7", "rows": "1000"},
-        {"name": "📊 Customer Analytics", "description": "Customer behavior analysis", "features": "12", "rows": "2500"},
+        {"name": "💼 Life Insurance", "description": "Insurance claim prediction", "features": "7", "rows": "1000"},
     ]
-    
     for i in range(0, len(sample_datasets), 2):
         col1, col2 = st.columns(2)
-        
         if i < len(sample_datasets):
             with col1:
                 dataset = sample_datasets[i]
@@ -788,7 +746,6 @@ else:
                     """,
                     unsafe_allow_html=True
                 )
-        
         if i + 1 < len(sample_datasets):
             with col2:
                 dataset = sample_datasets[i + 1]
@@ -802,5 +759,4 @@ else:
                     """,
                     unsafe_allow_html=True
                 )
-    
-    st.info("💡 **Pro Tip**: Start with one of the sample datasets in your `Datasets/` folder to test the pipeline!")
+    st.info("💡 **Pro Tip**: Start with one of the sample dataset to test the pipeline!")
