@@ -282,9 +282,14 @@ st.markdown(
 )
 
 # --- Enhanced Sidebar ---
+
+# --- Control Panel Section ---
 st.sidebar.markdown(
     """
-    
+    <div style="background: linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+        <h3 style="color: white; margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600;">🛠️ Control Panel</h3>
+        <p style="color: rgba(255,255,255,0.85); font-size: 1rem; margin: 0;">Configure your ML pipeline settings and manage your workflow from here.</p>
+    </div>
     """,
     unsafe_allow_html=True
 )
@@ -355,35 +360,43 @@ if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
     
     # Dataset info card
+    # Main heading for Dataset Overview
+    st.markdown(
+        """
+        <div style="text-align: left; margin-bottom: 1.5rem;">
+            <h2 style="color: white; font-size: 2rem; font-weight: 700; margin: 0 0 1rem 0;">📄 Dataset Overview</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Three metric cards for Rows, Columns, Missing Values
     st.markdown(
         f"""
-        <div class="metric-card tooltip">
-            <h3 style="color: white; margin: 0 0 1rem 0;">📄 Dataset Overview</h3>
-            <div style="display: flex; justify-content: space-around; text-align: center;">
-                <div class="tooltip" style="cursor: pointer;">
-                    <h4 style="color: #4ecdc4; margin: 0;">{df.shape[0]:,}</h4>
-                    <p style="color: rgba(255,255,255,0.8); margin: 0;">Rows</p>
-                    <span class="tooltiptext">
-                        <strong>Dataset Rows:</strong> Total number of data samples/records in your dataset. 
-                        More rows generally lead to better model performance, especially for complex patterns.
-                    </span>
-                </div>
-                <div class="tooltip" style="cursor: pointer;">
-                    <h4 style="color: #ff6b6b; margin: 0;">{df.shape[1]:,}</h4>
-                    <p style="color: rgba(255,255,255,0.8); margin: 0;">Columns</p>
-                    <span class="tooltiptext">
-                        <strong>Dataset Columns:</strong> Total number of features/variables in your dataset. 
-                        Includes both input features and the target variable you want to predict.
-                    </span>
-                </div>
-                <div class="tooltip" style="cursor: pointer;">
-                    <h4 style="color: #feca57; margin: 0;">{df.isnull().sum().sum():,}</h4>
-                    <p style="color: rgba(255,255,255,0.8); margin: 0;">Missing Values</p>
-                    <span class="tooltiptext">
-                        <strong>Missing Values:</strong> Total number of empty/null cells in your dataset. 
-                        AutoPilotML automatically handles missing values using intelligent imputation strategies.
-                    </span>
-                </div>
+        <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
+            <div class="metric-card tooltip" style="flex: 1; min-width: 200px; max-width: 300px; text-align: center;">
+                <h3 style="color: #4ecdc4; margin: 0;">Rows</h3>
+                <h2 style="color: #4ecdc4; margin: 0.5rem 0 0 0;">{df.shape[0]:,}</h2>
+                <span class="tooltiptext">
+                    <strong>Dataset Rows:</strong> Total number of data samples/records in your dataset.<br>
+                    More rows generally lead to better model performance, especially for complex patterns.
+                </span>
+            </div>
+            <div class="metric-card tooltip" style="flex: 1; min-width: 200px; max-width: 300px; text-align: center;">
+                <h3 style="color: #ff6b6b; margin: 0;">Columns</h3>
+                <h2 style="color: #ff6b6b; margin: 0.5rem 0 0 0;">{df.shape[1]:,}</h2>
+                <span class="tooltiptext">
+                    <strong>Dataset Columns:</strong> Total number of features/variables in your dataset.<br>
+                    Includes both input features and the target variable you want to predict.
+                </span>
+            </div>
+            <div class="metric-card tooltip" style="flex: 1; min-width: 200px; max-width: 300px; text-align: center;">
+                <h3 style="color: #feca57; margin: 0;">Missing Values</h3>
+                <h2 style="color: #feca57; margin: 0.5rem 0 0 0;">{df.isnull().sum().sum():,}</h2>
+                <span class="tooltiptext">
+                    <strong>Missing Values:</strong> Total number of empty/null cells in your dataset.<br>
+                    AutoPilotML automatically handles missing values using intelligent imputation strategies.
+                </span>
             </div>
         </div>
         """,
@@ -481,11 +494,20 @@ if uploaded_file is not None:
                 )
                 
                 # Enhanced metrics display
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.markdown(
-                        f"""
-                        <div class="metric-card tooltip" style="text-align: center;">
+                # Prepare rating variables for the metric card block
+                rating = results['overall_rating']
+                rating_color = "#ff6b6b" if rating < 5 else "#feca57" if rating < 8 else "#4ecdc4"
+                rating_description = (
+                    "Poor performance - may need more data or feature engineering" if rating < 5 
+                    else "Good performance - model is reliable for most use cases" if rating < 8 
+                    else "Excellent performance - model is highly accurate and ready for production"
+                )
+
+                # Use a single HTML block for all three metric cards, aligned and sized equally
+                st.markdown(
+                    f"""
+                    <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
+                        <div class="metric-card tooltip" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;">
                             <h3 style="color: #4ecdc4; margin: 0;">🎯 Task Type</h3>
                             <h2 style="color: white; margin: 0.5rem 0 0 0;">{results['task'].capitalize()}</h2>
                             <span class="tooltiptext">
@@ -494,13 +516,7 @@ if uploaded_file is not None:
                                 AutoPilotML automatically detects the appropriate task type based on your target variable.
                             </span>
                         </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                with col2:
-                    st.markdown(
-                        f"""
-                        <div class="metric-card tooltip" style="text-align: center;">
+                        <div class="metric-card tooltip" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;">
                             <h3 style="color: #ff6b6b; margin: 0;">🏆 Best Model</h3>
                             <h2 style="color: white; margin: 0.5rem 0 0 0;">{results['best_model']}</h2>
                             <span class="tooltiptext">
@@ -509,20 +525,7 @@ if uploaded_file is not None:
                                 based on cross-validation performance and your chosen strategy.
                             </span>
                         </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                with col3:
-                    rating = results['overall_rating']
-                    rating_color = "#ff6b6b" if rating < 5 else "#feca57" if rating < 8 else "#4ecdc4"
-                    rating_description = (
-                        "Poor performance - may need more data or feature engineering" if rating < 5 
-                        else "Good performance - model is reliable for most use cases" if rating < 8 
-                        else "Excellent performance - model is highly accurate and ready for production"
-                    )
-                    st.markdown(
-                        f"""
-                        <div class="metric-card tooltip" style="text-align: center;">
+                        <div class="metric-card tooltip" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;">
                             <h3 style="color: {rating_color}; margin: 0;">⭐ Overall Rating</h3>
                             <h2 style="color: white; margin: 0.5rem 0 0 0;">{rating:.1f}/10</h2>
                             <span class="tooltiptext">
@@ -531,9 +534,10 @@ if uploaded_file is not None:
                                 <strong>Your Score:</strong> {rating_description}
                             </span>
                         </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
                 # --- Performance Metrics ---
                 st.subheader("📊 Model Performance")
@@ -552,7 +556,7 @@ if uploaded_file is not None:
                     st.write(results['summary'])
 
                 # --- Display Logs ---
-                with st.expander("📋 Detailed Training Logs", expanded=False):
+                with st.expander("👨‍💻 For Developers", expanded=False):
                     for log in results['logs']:
                         st.text(log)
 
