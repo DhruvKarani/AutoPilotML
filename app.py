@@ -1,94 +1,112 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-import os
-from automl_pipeline import run_automl_pipeline  # modularized function
-import pickle
-import matplotlib.pyplot as plt
+# =============================
+#   AutoPilotML Streamlit App
+# =============================
+# Comments are deliberately added for easy debugging and understanding of the code.
+# This file builds the interactive dashboard for AutoPilotML using Streamlit.
+# It covers: UI layout, dataset upload, model configuration, pipeline execution,
+# results visualization, and model download. Each section is explained below.
 
+# --- Import Required Libraries ---
+import streamlit as st  # Main Streamlit library for building web UI
+import pandas as pd     # For DataFrame operations and data manipulation
+import numpy as np      # For numerical operations and array handling
+import os               # For file system operations
+from automl_pipeline import run_automl_pipeline  # Our main ML pipeline function
+import pickle           # For model serialization and deserialization
+import matplotlib.pyplot as plt  # For custom plotting if needed
+
+# --- Streamlit Page Configuration ---
+# This sets up the basic properties of the web page
 st.set_page_config(
-    layout="wide", 
-    page_title="AutoPilotML Pipeline", 
-    page_icon="🚀", 
-    initial_sidebar_state="expanded"
+    layout="wide",  # Uses full width of browser
+    page_title="AutoPilotML Pipeline",  # Browser tab title
+    page_icon="🚀",  # Browser tab icon
+    initial_sidebar_state="expanded"  # Sidebar is open by default
 )
 
 # --- Enhanced Page Styling ---
+# This section injects custom CSS to style the entire application.
+# It controls colors, fonts, animations, card styles, tooltips, buttons, etc.
+# You can modify colors, sizes, and effects here to customize the look.
 st.markdown(
     """
     <style>
-    /* Import Google Fonts */
+    /* Import Google Fonts for better typography */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
     
-    /* Main app styling */
+    /* Main app background and font styling */
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Purple gradient background */
+        font-family: 'Inter', sans-serif;  /* Modern font for better readability */
     }
     
-    /* Custom header styling */
+    /* Header styling with animated gradient background */
     .main-header {
-        background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
-        background-size: 300% 300%;
-        animation: gradient 8s ease infinite;
+        background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);  /* Multi-color gradient */
+        background-size: 300% 300%;  /* Makes gradient larger for animation */
+        animation: gradient 8s ease infinite;  /* Animates the gradient colors */
         padding: 2rem;
         border-radius: 15px;
         text-align: center;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);  /* Drop shadow for depth */
     }
     
-    /* Header layout responsive design */
+    /* Responsive header layout for different screen sizes */
     .header-container {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
+        display: flex;  /* Flexbox layout for side-by-side elements */
+        gap: 1rem;     /* Space between elements */
+        align-items: flex-start;  /* Align items to top */
         margin-bottom: 2rem;
     }
     
+    /* Control panel header styling */
     .control-panel-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 1.5rem;
         border-radius: 15px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         text-align: center;
-        min-width: 250px;
-        height: fit-content;
+        min-width: 250px;  /* Minimum width to prevent shrinking */
+        height: fit-content;  /* Height adjusts to content */
     }
     
+    /* Mobile responsiveness - stacks elements vertically on small screens */
     @media (max-width: 768px) {
         .header-container {
-            flex-direction: column;
+            flex-direction: column;  /* Stack vertically on mobile */
         }
         .control-panel-header {
-            min-width: 100%;
+            min-width: 100%;  /* Full width on mobile */
         }
     }
     
+    /* Animation keyframes for the gradient background */
     @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        0% { background-position: 0% 50%; }    /* Start position */
+        50% { background-position: 100% 50%; } /* Middle position */
+        100% { background-position: 0% 50%; }  /* End position (back to start) */
     }
     
+    /* Header text styling */
     .main-header h1 {
         color: white;
-        font-size: 3rem;
-        font-weight: 700;
-        margin: 0;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        font-size: 3rem;     /* Large title text */
+        font-weight: 700;    /* Bold weight */
+        margin: 0;           /* Remove default margins */
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);  /* Text shadow for readability */
     }
     
     .main-header p {
-        color: rgba(255,255,255,0.9);
+        color: rgba(255,255,255,0.9);  /* Slightly transparent white */
         font-size: 1.2rem;
         margin-top: 0.5rem;
-        font-weight: 300;
+        font-weight: 300;    /* Light weight for subtitle */
     }
     
-    /* Sidebar styling */
+    /* Sidebar background styling - targets Streamlit's sidebar classes */
     .css-1d391kg {
-        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);  /* Dark gradient */
     }
     
     /* Minimized sidebar styling */
@@ -96,218 +114,230 @@ st.markdown(
         background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
     }
     
-    /* Sidebar collapse button area styling - Multiple selectors */
+    /* Sidebar collapse button styling - multiple selectors for different Streamlit versions */
     .css-1rs6os, .css-1544g2n, [data-testid="collapsedControl"], 
     .css-17eq0hr, .css-164nlkn, .css-1v8rj3v, .stSidebar > div > div {
         position: relative;
     }
     
-    /* Add Control Panel text next to collapse arrow - Multiple approaches */
-    
-    /* Removed Control Panel pseudo-elements and button styling */
-    
-    /* Custom metrics styling */
+    /* Custom metric cards styling - these are the main info boxes */
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        border: 1px solid rgba(255,255,255,0.1);
-        backdrop-filter: blur(10px);
-        margin: 0.5rem 0;
-        position: relative;
-        transition: all 0.3s ease;
-        cursor: pointer;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Purple gradient background */
+        padding: 1.5rem;          /* Inner spacing */
+        border-radius: 12px;      /* Rounded corners */
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);  /* Drop shadow for depth */
+        border: 1px solid rgba(255,255,255,0.1); /* Subtle border */
+        backdrop-filter: blur(10px);  /* Blur effect for modern look */
+        margin: 0.5rem 0;         /* Vertical spacing between cards */
+        position: relative;       /* For positioning child elements */
+        transition: all 0.3s ease;  /* Smooth animations on hover */
+        cursor: pointer;          /* Shows it's interactive */
     }
     
+    /* Hover effect for metric cards - makes them "lift up" */
     .metric-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-        border: 1px solid rgba(255,255,255,0.3);
+        transform: translateY(-5px);  /* Moves card up slightly */
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3);  /* Larger shadow */
+        border: 1px solid rgba(255,255,255,0.3);  /* Brighter border */
     }
     
-    /* Tooltip styling */
+    /* Tooltip system - shows helpful information on hover */
     .tooltip {
-        position: relative;
-        display: inline-block;
+        position: relative;      /* Allows positioning of tooltip */
+        display: inline-block;   /* Allows hover detection */
     }
     
+    /* Tooltip text box styling */
     .tooltip .tooltiptext {
-        visibility: hidden;
-        width: 320px;
-        background: rgba(44, 62, 80, 0.98);
-        color: white;
-        text-align: left;
-        border-radius: 12px;
-        padding: 16px;
-        position: absolute;
-        z-index: 9999;
-        top: -10px;
-        left: 50%;
-        margin-left: -160px;
-        opacity: 0;
-        transition: all 0.3s ease;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-        border: 2px solid rgba(255,255,255,0.2);
-        backdrop-filter: blur(10px);
+        visibility: hidden;      /* Hidden by default */
+        width: 320px;           /* Fixed width for consistency */
+        background: rgba(44, 62, 80, 0.98);  /* Dark semi-transparent background */
+        color: white;           /* White text */
+        text-align: left;       /* Left-aligned text */
+        border-radius: 12px;    /* Rounded corners */
+        padding: 16px;          /* Inner spacing */
+        position: absolute;     /* Positioned relative to parent */
+        z-index: 9999;         /* Appears above everything else */
+        top: -10px;            /* Position above the element */
+        left: 50%;             /* Center horizontally */
+        margin-left: -160px;   /* Offset to truly center (half of width) */
+        opacity: 0;            /* Transparent by default */
+        transition: all 0.3s ease;  /* Smooth fade in/out */
+        font-size: 0.95rem;    /* Readable font size */
+        line-height: 1.5;      /* Good line spacing */
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);  /* Drop shadow */
+        border: 2px solid rgba(255,255,255,0.2);  /* Subtle border */
+        backdrop-filter: blur(10px);  /* Blur background behind tooltip */
     }
     
+    /* Tooltip arrow pointing downward */
     .tooltip .tooltiptext::after {
-        content: "";
-        position: absolute;
-        bottom: -10px;
-        left: 50%;
-        margin-left: -10px;
-        border-width: 10px;
-        border-style: solid;
-        border-color: rgba(44, 62, 80, 0.98) transparent transparent transparent;
+        content: "";           /* Empty content for the arrow */
+        position: absolute;    /* Positioned relative to tooltip */
+        bottom: -10px;        /* Below the tooltip */
+        left: 50%;            /* Centered horizontally */
+        margin-left: -10px;   /* Offset to center the arrow */
+        border-width: 10px;   /* Size of the arrow */
+        border-style: solid;  /* Solid border */
+        border-color: rgba(44, 62, 80, 0.98) transparent transparent transparent;  /* Arrow color */
     }
     
+    /* Show tooltip on hover */
     .tooltip:hover .tooltiptext {
-        visibility: visible;
-        opacity: 1;
-        top: -20px;
+        visibility: visible;   /* Make visible */
+        opacity: 1;           /* Fully opaque */
+        top: -20px;          /* Move up slightly for better positioning */
     }
     
-    /* Responsive tooltip positioning */
+    /* Mobile responsive tooltip adjustments */
     @media (max-width: 768px) {
         .tooltip .tooltiptext {
-            width: 280px;
-            margin-left: -140px;
-            font-size: 0.9rem;
+            width: 280px;        /* Smaller width for mobile */
+            margin-left: -140px; /* Adjust centering for new width */
+            font-size: 0.9rem;   /* Slightly smaller text */
         }
     }
     
-    /* Button styling */
+    /* Button styling for all Streamlit buttons */
     .stButton > button {
-        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-        color: white;
-        border: none;
-        padding: 0.75rem 2rem;
-        border-radius: 25px;
-        font-weight: 600;
-        font-size: 1.1rem;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        transition: all 0.3s ease;
-        transform: translateY(0);
+        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);  /* Gradient background */
+        color: white;            /* White text */
+        border: none;           /* Remove default border */
+        padding: 0.75rem 2rem;  /* Inner spacing */
+        border-radius: 25px;    /* Rounded button */
+        font-weight: 600;       /* Semi-bold text */
+        font-size: 1.1rem;      /* Larger text */
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);  /* Drop shadow */
+        transition: all 0.3s ease;  /* Smooth hover effects */
+        transform: translateY(0);    /* Starting position for animation */
     }
     
+    /* Button hover effect */
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        background: linear-gradient(45deg, #4ecdc4, #ff6b6b);
+        transform: translateY(-2px);  /* Lift up on hover */
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);  /* Larger shadow */
+        background: linear-gradient(45deg, #4ecdc4, #ff6b6b);  /* Reverse gradient */
     }
     
-    /* File uploader styling */
+    /* File uploader widget styling */
     .stFileUploader {
-        background: rgba(255,255,255,0.05);
-        border-radius: 10px;
-        padding: 1rem;
-        border: 2px dashed rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.05);  /* Subtle white overlay */
+        border-radius: 10px;                 /* Rounded corners */
+        padding: 1rem;                       /* Inner spacing */
+        border: 2px dashed rgba(255,255,255,0.3);  /* Dashed border for drag-drop area */
     }
     
-    /* Success/Error message styling */
+    /* Success message styling */
     .stSuccess {
-        background: linear-gradient(90deg, #56ab2f, #a8e6cf);
+        background: linear-gradient(90deg, #56ab2f, #a8e6cf);  /* Green gradient */
         border-radius: 10px;
         padding: 1rem;
     }
     
+    /* Error message styling */
     .stError {
-        background: linear-gradient(90deg, #ff416c, #ff4b2b);
+        background: linear-gradient(90deg, #ff416c, #ff4b2b);  /* Red gradient */
         border-radius: 10px;
         padding: 1rem;
     }
     
-    /* Tab styling */
+    /* Tab container styling */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
-        justify-content: flex-start;
-        overflow-x: auto;
-        white-space: nowrap;
+        gap: 2px;                /* Space between tabs */
+        justify-content: flex-start;  /* Align tabs to left */
+        overflow-x: auto;        /* Allow horizontal scrolling if needed */
+        white-space: nowrap;     /* Keep tabs on one line */
     }
     
+    /* Individual tab styling */
     .stTabs [data-baseweb="tab"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 8px;
-        color: white;
-        font-weight: 600;
-        padding: 8px 16px;
-        margin: 0 1px;
-        min-width: 80px;
-        text-align: center;
-        font-size: 0.9rem;
-        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Purple gradient */
+        border-radius: 8px;      /* Rounded corners */
+        color: white;           /* White text */
+        font-weight: 600;       /* Semi-bold */
+        padding: 8px 16px;      /* Inner spacing */
+        margin: 0 1px;          /* Small gap between tabs */
+        min-width: 80px;        /* Minimum width for consistency */
+        text-align: center;     /* Center text */
+        font-size: 0.9rem;      /* Slightly smaller text */
+        transition: all 0.3s ease;  /* Smooth hover effects */
     }
     
+    /* Tab hover effect */
     .stTabs [data-baseweb="tab"]:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);  /* Reverse gradient on hover */
+        transform: translateY(-1px);  /* Slight lift effect */
     }
     
+    /* Active/selected tab styling */
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-        box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
+        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);  /* Teal gradient for active */
+        box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);  /* Glowing shadow */
     }
     
-    /* Loading spinner custom */
+    /* Loading spinner color customization */
     .stSpinner {
-        color: #4ecdc4;
+        color: #4ecdc4;  /* Teal color for loading spinner */
     }
     
-    /* Custom warning styling */
+    /* Warning message styling */
     .stWarning {
-        background: linear-gradient(90deg, #f7971e, #ffd200);
+        background: linear-gradient(90deg, #f7971e, #ffd200);  /* Orange to yellow gradient */
         border-radius: 10px;
         padding: 1rem;
-        color: #2c3e50;
-        font-weight: 600;
+        color: #2c3e50;    /* Dark text for readability */
+        font-weight: 600;  /* Semi-bold text */
     }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- Enhanced App Header ---
+# --- Main App Header ---
+# This creates the main title banner at the top of the page with animated gradient background
 st.markdown(
     """
     <div style="background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57); background-size: 300% 300%; animation: gradient 8s ease infinite; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 1rem;">
-        <h1 style="color: white; font-size: 2.5rem; font-weight: 700; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🚀 AutoPilotML Pipeline</h1>
-        <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-top: 0.5rem; font-weight: 300;">Advanced Machine Learning Automation Platform</p>
+        <h1 style="color: black; font-size: 2.5rem; font-weight: 700; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🚀 AutoPilotML Pipeline</h1>
+        <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-top: 0.5rem; font-weight: 300;">Your Advanced Machine Learning Pipeline Without Any Leakage</p>
     </div>
     """,
     unsafe_allow_html=True
 )
 
-# --- Enhanced Sidebar ---
+# --- Sidebar Layout ---
+# The sidebar contains all user controls and configuration options
 
 # --- Control Panel Section ---
+# This displays an informational header in the sidebar explaining what the controls do
 st.sidebar.markdown(
     """
     <div style="background: linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-        <h3 style="color: white; margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600;">🛠️ Control Panel</h3>
+        <h3 style="color: black; margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600;">🛠️ Control Panel</h3>
         <p style="color: rgba(255,255,255,0.85); font-size: 1rem; margin: 0;">Configure your ML pipeline settings and manage your workflow from here.</p>
     </div>
     """,
     unsafe_allow_html=True
 )
 
+# --- Dataset Upload Section ---
+# File uploader widget that accepts CSV files
 st.sidebar.header("📁 Upload Your Dataset")
 uploaded_file = st.sidebar.file_uploader(
     "Choose a CSV file", 
-    type=["csv"],
+    type=["csv"],  # Only allows CSV files
     help="Upload your dataset in CSV format. Supported formats: .csv"
 )
 
-# --- Enhanced Model Configuration ---
+# --- Model Configuration Section ---
+# This section lets users choose how the ML pipeline selects the best model
 st.sidebar.header("🔧 Model Configuration")
 
+# Model Selection Strategy dropdown with detailed explanations
 with st.sidebar.expander("🎯 Model Selection Strategy", expanded=True):
     model_choice = st.selectbox(
         "Strategy", 
-        ["gridsearch", "accuracy", "utility"], 
+        ["gridsearch", "accuracy", "utility"],  # Three different strategies
         help="""Choose your model selection strategy:
 
 🔬 **gridsearch**: Full hyperparameter tuning (recommended)
@@ -326,19 +356,23 @@ with st.sidebar.expander("🎯 Model Selection Strategy", expanded=True):
 - May choose faster models over marginal accuracy gains"""
     )
 
-with st.sidebar.expander("⚙️ Advanced Settings", expanded=False):
+# Advanced Settings for power users
+with st.sidebar.expander("⚙️ Advanced Settings", expanded=True):
+    # Option to force clean regression targets even if data quality is questionable
     force_clean_regression = st.checkbox(
         "Force Clean Regression Targets", 
         help="Force clean regression targets even with high bad ratio"
     )
     
+    # For multiclass classification, specify which class to use for ROC curves
     selected_class_for_roc = st.text_input(
         "Class for ROC Curve (multiclass only)", 
         help="Enter class name for multiclass ROC curves"
     )
 
 # --- Info Panel ---
-st.sidebar.markdown("---")
+# This section showcases the key features of AutoPilotML to inform users
+st.sidebar.markdown("---")  # Horizontal line separator
 st.sidebar.markdown(
     """
     <div style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); padding: 1rem; border-radius: 10px; text-align: center;">
@@ -355,12 +389,19 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# --- Main Content Area ---
+# =============================
+#   Main Content Area
+# =============================
+# This section displays different content based on whether a file has been uploaded
+
+# --- Case 1: Dataset Uploaded ---
+# If user has uploaded a file, show the main dashboard and analysis tools
 if uploaded_file is not None:
+    # Read the CSV file into a pandas DataFrame for analysis
     df = pd.read_csv(uploaded_file)
     
-    # Dataset info card
-    # Main heading for Dataset Overview
+    # --- Dataset Overview Section ---
+    # Display summary statistics about the uploaded dataset
     st.markdown(
         """
         <div style="text-align: left; margin-bottom: 1.5rem;">
@@ -370,7 +411,8 @@ if uploaded_file is not None:
         unsafe_allow_html=True
     )
 
-    # Three metric cards for Rows, Columns, Missing Values
+    # Three metric cards showing key dataset statistics
+    # Uses f-string to insert actual dataset values into the HTML
     st.markdown(
         f"""
         <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
@@ -403,86 +445,105 @@ if uploaded_file is not None:
         unsafe_allow_html=True
     )
     
+    # --- Dataset Preview Table ---
+    # Shows the first 10 rows so users can see their data structure
     st.subheader("📋 Dataset Preview")
-    st.dataframe(df.head(10), use_container_width=True)
+    st.dataframe(df.head(10), use_container_width=True)  # Full width table
 
-    # --- Enhanced Target Column Selection ---
+    # --- Target Column Selection ---
+    # Users must specify which column they want to predict (the target variable)
     st.markdown("### 🎯 Target Configuration")
-    col1, col2 = st.columns([3, 1])
+    col1, col2 = st.columns([3, 1])  # 3:1 ratio layout
     
     with col1:
+        # Dropdown with all column names from the dataset
         target_column = st.selectbox(
             "Select Target Column", 
-            df.columns,
+            df.columns,  # All columns as options
             help="Choose the column you want to predict"
         )
     
     with col2:
+        # Show number of unique values in selected target column
         if target_column:
             unique_values = df[target_column].nunique()
             st.metric("Unique Values", unique_values)
 
-    # Show target distribution
+    # --- Target Distribution Analysis ---
+    # Shows distribution of values in the target column to help users understand their data
     if target_column:
         st.markdown("#### 📊 Target Distribution")
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)  # Side-by-side layout
         
         with col1:
-            value_counts = df[target_column].value_counts().head(10)
+            # Bar chart showing frequency of each value
+            value_counts = df[target_column].value_counts().head(10)  # Top 10 most common values
             st.bar_chart(value_counts)
         
         with col2:
+            # Text breakdown showing percentages
             st.write("**Top 10 Values:**")
             for idx, (value, count) in enumerate(value_counts.items()):
-                percentage = (count / len(df)) * 100
+                percentage = (count / len(df)) * 100  # Calculate percentage
                 st.write(f"• **{value}**: {count:,} ({percentage:.1f}%)")
+        st.write("If one value dominates, it may signal class imbalance — AutoPilotML handles this automatically during training.")
 
-    # --- Enhanced Run Button ---
-    st.markdown("---")
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # --- Launch Pipeline Button ---
+    # Main action button to start the machine learning process
+    st.markdown("---")  # Horizontal separator
+    col1, col2, col3 = st.columns([1, 2, 1])  # Center the button
     with col2:
         run_pipeline = st.button(
             "🚀 Launch AutoPilotML Pipeline", 
-            use_container_width=True,
-            type="primary"
+            use_container_width=True,  # Button fills column width
+            type="primary"  # Makes button prominent
         )
     
+    # =============================
+    #   Pipeline Execution & Results
+    # =============================
+    # This section runs when the user clicks the "Launch Pipeline" button
     if run_pipeline:
-        # Progress indicator
-        progress_bar = st.progress(0)
-        status_text = st.empty()
+        # Create progress indicators to show pipeline status
+        progress_bar = st.progress(0)  # Progress bar from 0-100%
+        status_text = st.empty()       # Text that updates with current step
         
+        # Show spinner animation while processing
         with st.spinner("🤖 AutoPilotML is training your models... Please wait"):
             try:
-                # Update progress
+                # --- Step 1: Initial Setup ---
                 progress_bar.progress(10)
                 status_text.text("🔍 Analyzing dataset...")
                 
-                # Prepare optional parameters
+                # --- Step 2: Prepare Parameters ---
+                # Convert user inputs to format expected by pipeline
                 roc_class = selected_class_for_roc if selected_class_for_roc.strip() else None
                 
                 progress_bar.progress(20)
                 status_text.text("⚙️ Configuring pipeline...")
                 
-                # Run the AutoML pipeline
+                # --- Step 3: Run the ML Pipeline ---
+                # This is the main function that does all the machine learning work
                 results = run_automl_pipeline(
-                    df=df, 
-                    target_col=target_column,
-                    model_choice=model_choice,
-                    force_clean_regression=force_clean_regression,
-                    selected_class_for_roc=roc_class
+                    df=df,                                    # Dataset
+                    target_col=target_column,                 # What to predict
+                    model_choice=model_choice,                # Strategy for model selection
+                    force_clean_regression=force_clean_regression,  # Advanced setting
+                    selected_class_for_roc=roc_class          # ROC curve class
                 )
                 
+                # --- Step 4: Pipeline Complete ---
                 progress_bar.progress(100)
                 status_text.text("✅ Pipeline complete!")
                 
-                # Clear progress indicators
+                # Remove progress indicators
                 progress_bar.empty()
                 status_text.empty()
 
-                # --- Enhanced Results Display ---
-                st.balloons()  # Celebration effect!
+                # --- Results Celebration ---
+                st.balloons()  # Fun celebration animation
                 
+                # --- Success Header ---
                 st.markdown(
                     """
                     <div style="background: linear-gradient(90deg, #56ab2f, #a8e6cf); padding: 2rem; border-radius: 15px; text-align: center; margin: 2rem 0;">
@@ -493,17 +554,19 @@ if uploaded_file is not None:
                     unsafe_allow_html=True
                 )
                 
-                # Enhanced metrics display
-                # Prepare rating variables for the metric card block
+                # --- Results Summary Cards ---
+                # Extract key results from the pipeline output
                 rating = results['overall_rating']
+                # Determine color based on rating score
                 rating_color = "#ff6b6b" if rating < 5 else "#feca57" if rating < 8 else "#4ecdc4"
+                # Generate description based on rating
                 rating_description = (
                     "Poor performance - may need more data or feature engineering" if rating < 5 
                     else "Good performance - model is reliable for most use cases" if rating < 8 
                     else "Excellent performance - model is highly accurate and ready for production"
                 )
 
-                # Use a single HTML block for all three metric cards, aligned and sized equally
+                # Display three key metrics in card format
                 st.markdown(
                     f"""
                     <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
@@ -539,68 +602,80 @@ if uploaded_file is not None:
                     unsafe_allow_html=True
                 )
 
-                # --- Performance Metrics ---
+                # --- Performance Metrics Display ---
+                # Shows detailed performance metrics in two columns
                 st.subheader("📊 Model Performance")
                 metrics_col1, metrics_col2 = st.columns(2)
                 
                 with metrics_col1:
                     st.write("**Performance Metrics:**")
+                    # Loop through all metrics and display them
                     for key, value in results['metrics'].items():
                         if isinstance(value, float):
+                            # Format floating point numbers to 4 decimal places
                             st.write(f"• **{key.upper()}**: {value:.4f}")
                         else:
+                            # Display non-numeric values as-is
                             st.write(f"• **{key.upper()}**: {value}")
 
                 with metrics_col2:
                     st.write("**Model Summary:**")
+                    # Display text summary of the best model
                     st.write(results['summary'])
 
-                # --- Display Logs ---
+                # --- Developer Logs Section ---
+                # Collapsible section showing detailed technical logs
                 with st.expander("👨‍💻 For Developers", expanded=False):
+                    # Display each log entry on a separate line
                     for log in results['logs']:
                         st.text(log)
 
-                # --- Display Plots ---
+                # --- Visualization Display ---
+                # Shows plots generated by the pipeline in organized tabs
                 if results['plots']:
                     st.subheader("📈 Visualizations")
                     
-                    # Create consistent tab labels with proper spacing
+                    # Create tab labels for each plot
                     num_plots = len(results['plots'])
                     tab_labels = []
                     for i in range(num_plots):
-                        tab_labels.append(f"Plot {i+1:02d}")  # Zero-padded for alignment
+                        tab_labels.append(f"Plot {i+1:02d}")  # Zero-padded numbers for alignment
                     
-                    # Create tabs with consistent spacing
+                    # Create tabs for each plot
                     plot_tabs = st.tabs(tab_labels)
                     
+                    # Display each plot in its own tab
                     for i, (tab, plot) in enumerate(zip(plot_tabs, results['plots'])):
                         with tab:
-                            # Create a container for better plot sizing
                             plot_container = st.container()
                             with plot_container:
-                                # Set figure size before displaying - smaller plots
+                                # Set consistent figure size for all plots
                                 if hasattr(plot, 'set_size_inches'):
-                                    plot.set_size_inches(6, 4)  # Reduced from (8, 5)
+                                    plot.set_size_inches(6, 4)  # Width=6, Height=4 inches
                                 
-                                # Display plot with custom width
+                                # Display the matplotlib figure
                                 st.pyplot(plot, use_container_width=False)
 
-                # --- SHAP Analysis ---
+                # --- SHAP Feature Importance Analysis ---
+                # SHAP (SHapley Additive exPlanations) shows which features matter most for predictions
                 if results['shap_analysis'] and results['shap_analysis'].get('feature_importance') is not None:
                     st.subheader("🔍 SHAP Feature Importance Analysis")
                     
                     shap_col1, shap_col2 = st.columns(2)
                     
                     with shap_col1:
-                        st.write("**Top 10 Most Important Features:**")
+                        st.write("**Top Most Important Features:**")
+                        # Extract feature importance data
                         feature_importance = results['shap_analysis']['feature_importance']
-                        feature_names = results['shap_analysis'].get('feature_names', [f"feature_{i}" for i in range(len(feature_importance))])
+                        feature_names = results['shap_analysis'].get('feature_names', 
+                                                                   [f"feature_{i}" for i in range(len(feature_importance))])
                         
-                        # Create a simple bar chart for feature importance
-                        top_indices = np.argsort(feature_importance)[-10:][::-1]
+                        # Find the top 10 most important features
+                        top_indices = np.argsort(feature_importance)[-10:][::-1]  # Sort descending, take top 10
                         top_features = [feature_names[i] for i in top_indices]
                         top_importance = [feature_importance[i] for i in top_indices]
                         
+                        # Create DataFrame for the bar chart
                         importance_df = pd.DataFrame({
                             'Feature': top_features,
                             'Importance': top_importance
@@ -609,39 +684,52 @@ if uploaded_file is not None:
                     
                     with shap_col2:
                         st.write("**SHAP Analysis Summary:**")
+                        # Display analysis logs if available
                         for log in results['shap_analysis'].get('analysis_logs', []):
                             st.text(log)
 
-                # --- Model Download ---
+                # --- Model Download Section ---
+                # Allows users to download the trained model for use in other applications
                 st.subheader("💾 Download Trained Model")
                 
+                # Check if model file exists
                 if os.path.exists(results['model_path']):
+                    # Read the model file and create download button
                     with open(results['model_path'], "rb") as f:
                         st.download_button(
                             label="⬇️ Download Best Model (.pkl)",
-                            data=f.read(),
-                            file_name=f"{results['best_model'].replace(' ', '_')}_model.pkl",
-                            mime="application/octet-stream"
+                            data=f.read(),  # File contents
+                            file_name=f"{results['best_model'].replace(' ', '_')}_model.pkl",  # Clean filename
+                            mime="application/octet-stream"  # Binary file type
                         )
                     st.success(f"✅ Model saved at: {results['model_path']}")
                 else:
                     st.error("❌ Model file not found")
 
-                # --- Model Scores Comparison ---
+                # --- Model Comparison Chart ---
+                # Shows performance of all tested models for comparison
                 if results['model_scores']:
                     st.subheader("🏅 All Model Scores Comparison")
+                    # Convert model scores dictionary to DataFrame
                     scores_df = pd.DataFrame(list(results['model_scores'].items()), 
                                            columns=['Model', 'Score'])
+                    # Sort by score (highest first)
                     scores_df = scores_df.sort_values('Score', ascending=False)
+                    # Display as horizontal bar chart
                     st.bar_chart(scores_df.set_index('Model'))
 
             except Exception as e:
+                # Error handling - shows detailed error information if pipeline fails
                 st.error(f"❌ Pipeline execution failed: {str(e)}")
                 st.error("Please check your dataset and try again.")
-                st.exception(e)  # Show full traceback for debugging
+                st.exception(e)  # Shows full error traceback for debugging
 
+# =============================
+#   Case 2: No Dataset Uploaded
+# =============================
+# This section displays welcome content and instructions when no file is uploaded
 else:
-    # --- Welcome Section ---
+    # --- Welcome Message ---
     st.markdown(
         """
         <div class="metric-card" style="text-align: center; margin: 2rem 0;">
@@ -655,12 +743,14 @@ else:
         unsafe_allow_html=True
     )
     
-    # Features showcase
+    # --- Features Showcase ---
+    # Three-column layout showing what AutoPilotML can do
     st.markdown("### 🚀 What AutoPilotML Can Do")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)  # Three equal columns
     
     with col1:
+        # Smart Automation features
         st.markdown(
             """
             <div class="metric-card" style="text-align: center;">
@@ -677,6 +767,7 @@ else:
         )
     
     with col2:
+        # Model Training features
         st.markdown(
             """
             <div class="metric-card" style="text-align: center;">
@@ -693,6 +784,7 @@ else:
         )
     
     with col3:
+        # Analysis & Export features
         st.markdown(
             """
             <div class="metric-card" style="text-align: center;">
@@ -708,7 +800,8 @@ else:
             unsafe_allow_html=True
         )
     
-    # Getting started
+    # --- Getting Started Instructions ---
+    # Step-by-step guide for new users
     st.markdown("### 🎯 Getting Started")
     st.markdown(
         """
@@ -725,7 +818,8 @@ else:
         unsafe_allow_html=True
     )
     
-    # Sample datasets info
+    # --- Sample Datasets Information ---
+    # Shows available example datasets for users to try
     st.markdown("### 📂 Sample Datasets Available")
     sample_datasets = [
         {"name": "🌸 Iris", "description": "Classic flower classification", "features": "4", "rows": "150"},
@@ -735,8 +829,12 @@ else:
         {"name": "🏦 Bank Marketing", "description": "Campaign success prediction", "features": "20", "rows": "4521"},
         {"name": "💼 Life Insurance", "description": "Insurance claim prediction", "features": "7", "rows": "1000"},
     ]
-    for i in range(0, len(sample_datasets), 2):
+    
+    # Display datasets in a 2-column grid layout
+    for i in range(0, len(sample_datasets), 2):  # Process 2 datasets at a time
         col1, col2 = st.columns(2)
+        
+        # Left column dataset
         if i < len(sample_datasets):
             with col1:
                 dataset = sample_datasets[i]
@@ -750,6 +848,8 @@ else:
                     """,
                     unsafe_allow_html=True
                 )
+        
+        # Right column dataset
         if i + 1 < len(sample_datasets):
             with col2:
                 dataset = sample_datasets[i + 1]
@@ -763,4 +863,6 @@ else:
                     """,
                     unsafe_allow_html=True
                 )
+    
+    # Pro tip for users
     st.info("💡 **Pro Tip**: Start with one of the sample dataset to test the pipeline!")

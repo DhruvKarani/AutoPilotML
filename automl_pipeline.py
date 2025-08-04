@@ -1788,142 +1788,95 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         return results
 
 
-def test_pipeline():
-    """
-    Test function to demonstrate the AutoML pipeline with a sample dataset
-    """
-    import pandas as pd
-    from sklearn.datasets import load_iris, load_boston
-    import warnings
-    warnings.filterwarnings('ignore')
+# def test_pipeline():
+#     """
+#     Test function to demonstrate the AutoML pipeline with a sample dataset
+#     """
+#     import pandas as pd
+#     from sklearn.datasets import load_iris, load_boston
+#     import warnings
+#     warnings.filterwarnings('ignore')
     
-    print("🧪 Testing AutoML Pipeline...")
-    print("="*50)
+#     print("🧪 Testing AutoML Pipeline...")
+#     print("="*50)
     
-    # Test with Iris dataset (Classification)
-    print("\n🌸 Testing with Iris Dataset (Classification)")
-    print("-" * 45)
+#     # Test with Iris dataset (Classification)
+#     print("\n🌸 Testing with Iris Dataset (Classification)")
+#     print("-" * 45)
     
-    try:
-        iris = load_iris()
-        iris_df = pd.DataFrame(iris.data, columns=iris.feature_names)
-        iris_df['target'] = iris.target
+#     try:
+#         iris = load_iris()
+#         iris_df = pd.DataFrame(iris.data, columns=iris.feature_names)
+#         iris_df['target'] = iris.target
         
-        # Map numeric targets to class names for better testing
-        target_names = {0: 'setosa', 1: 'versicolor', 2: 'virginica'}
-        iris_df['species'] = iris_df['target'].map(target_names)
-        iris_df = iris_df.drop('target', axis=1)
+#         # Map numeric targets to class names for better testing
+#         target_names = {0: 'setosa', 1: 'versicolor', 2: 'virginica'}
+#         iris_df['species'] = iris_df['target'].map(target_names)
+#         iris_df = iris_df.drop('target', axis=1)
         
-        print(f"📊 Dataset shape: {iris_df.shape}")
-        print(f"🎯 Target column: 'species'")
-        print(f"📋 Classes: {iris_df['species'].unique()}")
+#         print(f"📊 Dataset shape: {iris_df.shape}")
+#         print(f"🎯 Target column: 'species'")
+#         print(f"📋 Classes: {iris_df['species'].unique()}")
         
-        # Run AutoML pipeline
-        results = run_automl_pipeline(
-            df=iris_df,
-            target_col='species',
-            model_choice='gridsearch'
-        )
+#         # Run AutoML pipeline
+#         results = run_automl_pipeline(
+#             df=iris_df,
+#             target_col='species',
+#             model_choice='gridsearch'
+#         )
         
-        print(f"\n✅ Classification Test Results:")
-        print(f"   Best Model: {results['best_model']}")
-        print(f"   Overall Rating: {results['overall_rating']:.1f}/10")
-        print(f"   Accuracy: {results['metrics'].get('accuracy', 'N/A')}")
-        print(f"   Model Saved: {results['model_path']}")
+#         print(f"\n✅ Classification Test Results:")
+#         print(f"   Best Model: {results['best_model']}")
+#         print(f"   Overall Rating: {results['overall_rating']:.1f}/10")
+#         print(f"   Accuracy: {results['metrics'].get('accuracy', 'N/A')}")
+#         print(f"   Model Saved: {results['model_path']}")
         
-    except Exception as e:
-        print(f"❌ Classification test failed: {str(e)}")
+#     except Exception as e:
+#         print(f"❌ Classification test failed: {str(e)}")
     
-    # Test with Housing dataset (Regression) 
-    print("\n🏠 Testing with Boston Housing Dataset (Regression)")
-    print("-" * 50)
+#     # Test with Housing dataset (Regression) 
+#     print("\n🏠 Testing with Boston Housing Dataset (Regression)")
+#     print("-" * 50)
     
-    try:
-        # Try to load Boston housing dataset
-        try:
-            from sklearn.datasets import load_boston
-            boston = load_boston()
-            boston_df = pd.DataFrame(boston.data, columns=boston.feature_names)
-            boston_df['price'] = boston.target
-        except ImportError:
-            # Fallback: create synthetic regression data
-            from sklearn.datasets import make_regression
-            X, y = make_regression(n_samples=500, n_features=10, noise=0.1, random_state=42)
-            boston_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(10)])
-            boston_df['price'] = y
-            print("📝 Using synthetic regression dataset (Boston dataset deprecated)")
+#     try:
+#         # Try to load Boston housing dataset
+#         try:
+#             from sklearn.datasets import load_boston
+#             boston = load_boston()
+#             boston_df = pd.DataFrame(boston.data, columns=boston.feature_names)
+#             boston_df['price'] = boston.target
+#         except ImportError:
+#             # Fallback: create synthetic regression data
+#             from sklearn.datasets import make_regression
+#             X, y = make_regression(n_samples=500, n_features=10, noise=0.1, random_state=42)
+#             boston_df = pd.DataFrame(X, columns=[f'feature_{i}' for i in range(10)])
+#             boston_df['price'] = y
+#             print("📝 Using synthetic regression dataset (Boston dataset deprecated)")
         
-        print(f"📊 Dataset shape: {boston_df.shape}")
-        print(f"🎯 Target column: 'price'")
-        print(f"📈 Target range: {boston_df['price'].min():.2f} - {boston_df['price'].max():.2f}")
+#         print(f"📊 Dataset shape: {boston_df.shape}")
+#         print(f"🎯 Target column: 'price'")
+#         print(f"📈 Target range: {boston_df['price'].min():.2f} - {boston_df['price'].max():.2f}")
         
-        # Run AutoML pipeline
-        results = run_automl_pipeline(
-            df=boston_df,
-            target_col='price',
-            model_choice='gridsearch'
-        )
+#         # Run AutoML pipeline
+#         results = run_automl_pipeline(
+#             df=boston_df,
+#             target_col='price',
+#             model_choice='gridsearch'
+#         )
         
-        print(f"\n✅ Regression Test Results:")
-        print(f"   Best Model: {results['best_model']}")
-        print(f"   Overall Rating: {results['overall_rating']:.1f}/10")
-        print(f"   MAE: {results['metrics'].get('mae', 'N/A')}")
-        print(f"   RMSE: {results['metrics'].get('rmse', 'N/A')}")
-        print(f"   R²: {results['metrics'].get('r2', 'N/A')}")
-        print(f"   Model Saved: {results['model_path']}")
+#         print(f"\n✅ Regression Test Results:")
+#         print(f"   Best Model: {results['best_model']}")
+#         print(f"   Overall Rating: {results['overall_rating']:.1f}/10")
+#         print(f"   MAE: {results['metrics'].get('mae', 'N/A')}")
+#         print(f"   RMSE: {results['metrics'].get('rmse', 'N/A')}")
+#         print(f"   R²: {results['metrics'].get('r2', 'N/A')}")
+#         print(f"   Model Saved: {results['model_path']}")
         
-    except Exception as e:
-        print(f"❌ Regression test failed: {str(e)}")
+#     except Exception as e:
+#         print(f"❌ Regression test failed: {str(e)}")
     
-    print("\n🎉 Pipeline Testing Completed!")
-    print("="*50)
-    print("💡 You can now use run_automl_pipeline() with your own datasets!")
+#     print("\n🎉 Pipeline Testing Completed!")
+#     print("="*50)
+#     print("💡 You can now use run_automl_pipeline() with your own datasets!")
     
-    return results
-
-
-# Example usage:
-"""
-# Test the pipeline
-test_results = test_pipeline()
-
-# Or use with your own data:
-df = pd.read_csv("your_data.csv")
-results = run_automl_pipeline(
-    df=df, 
-    target_col="target_column_name",
-    model_choice='gridsearch',  # 'gridsearch', 'accuracy', or 'utility'
-    force_clean_regression=False,  # Set to True to force clean regression targets
-    selected_class_for_roc='class_name'  # For multiclass ROC curves
-)
-
-# Access results
-print(f"Best model: {results['best_model']}")
-print(f"Overall rating: {results['overall_rating']:.1f}/10")
-print(f"Model saved at: {results['model_path']}")
-
-# Print all logs
-for log in results['logs']:
-    print(log)
-
-# Show all plots
-for i, plot in enumerate(results['plots']):
-    plot.show()
-    print(f"Plot {i+1} displayed")
-
-# Access metrics
-if results['task'] == 'regression':
-    print(f"MAE: {results['metrics']['mae']:.2f}")
-    print(f"RMSE: {results['metrics']['rmse']:.2f}")
-    print(f"R²: {results['metrics']['r2']:.4f}")
-else:
-    print(f"Accuracy: {results['metrics']['accuracy']:.4f}")
-
-# Access SHAP analysis
-if results['shap_analysis']:
-    print("Top 5 most important features:")
-    top_features = results['shap_analysis']['top_features'][:5]
-    feature_names = results['shap_analysis']['feature_names']
-    for i, feat_idx in enumerate(top_features):
-        print(f"{i+1}. {feature_names[feat_idx]}")
-"""
+#     return results
