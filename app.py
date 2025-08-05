@@ -288,6 +288,147 @@ st.markdown(
         color: #2c3e50;    /* Dark text for readability */
         font-weight: 600;  /* Semi-bold text */
     }
+    
+    /* Hide the load buttons since cards are clickable */
+    button[data-testid="baseButton-secondary"][aria-label*="Load"], 
+    button[data-testid="baseButton-secondary"][title*="Load"] {
+        display: none !important;
+    }
+    
+    /* Enhanced card hover effects */
+    div[onclick] {
+        transition: all 0.3s ease;
+    }
+    
+    div[onclick]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+    
+    /* Hide load buttons visually but keep them functional */
+    button[key^="load_btn_"] {
+        display: none !important;
+        position: absolute;
+        visibility: hidden;
+        opacity: 0;
+        width: 100% !important;
+        pointer-events: none;
+    }
+    
+    /* Make all buttons full width */
+    .stButton > button {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+    
+    /* Make dataset cards smaller and more compact */
+    .dataset-card {
+        padding: 1rem !important;
+        margin-bottom: 0.8rem !important;
+        min-height: 120px;
+        max-height: 150px;
+    }
+    
+    .dataset-card h3 {
+        font-size: 1.1rem !important;
+        margin: 0 0 0.3rem 0 !important;
+    }
+    
+    .dataset-card p {
+        font-size: 0.85rem !important;
+        margin: 0.2rem 0 !important;
+        line-height: 1.3 !important;
+    }
+    
+    /* Hover effect for dataset cards */
+    .dataset-card:hover {
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3) !important;
+        border-left-width: 6px !important;
+    }
+    
+    /* Workflow dropdown in sidebar */
+    .workflow-dropdown {
+        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
+        border-radius: 12px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        border: 2px solid rgba(255,255,255,0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+        width: 100%;
+    }
+    
+    .workflow-dropdown:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+    }
+    
+    .workflow-toggle {
+        padding: 12px 16px;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-weight: 600;
+        color: white;
+        font-size: 0.9rem;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .workflow-toggle:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    
+    .workflow-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        background: rgba(255,255,255,0.05);
+        border-radius: 0 0 10px 10px;
+        margin-top: 2px;
+    }
+    
+    .workflow-content.expanded {
+        max-height: 400px;
+        padding: 16px;
+    }
+    
+    .workflow-step {
+        margin-bottom: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .workflow-step:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .workflow-step h4 {
+        color: #feca57;
+        margin: 0 0 4px 0;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+    
+    .workflow-step p {
+        color: rgba(255,255,255,0.9);
+        margin: 0;
+        font-size: 0.75rem;
+        line-height: 1.4;
+    }
+    
+    .workflow-arrow {
+        transition: transform 0.3s ease;
+        color: rgba(255,255,255,0.8);
+    }
+    
+    .workflow-arrow.rotated {
+        transform: rotate(180deg);
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -305,6 +446,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
+
 # --- Sidebar Layout ---
 # The sidebar contains all user controls and configuration options
 
@@ -316,6 +459,57 @@ st.sidebar.markdown(
         <h3 style="color: black; margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600;">🛠️ Control Panel</h3>
         <p style="color: rgba(255,255,255,0.85); font-size: 1rem; margin: 0;">Configure your ML pipeline settings and manage your workflow from here.</p>
     </div>
+    """,
+    unsafe_allow_html=True
+)
+
+# --- Workflow Dropdown in Sidebar ---
+# This creates a dropdown in the sidebar explaining the workflow
+st.sidebar.markdown(
+    """
+    <div class="workflow-dropdown" id="workflowDropdown">
+        <div class="workflow-toggle" onclick="toggleWorkflow()">
+            <span>🔄 How it Works</span>
+            <span class="workflow-arrow" id="workflowArrow">▼</span>
+        </div>
+        <div class="workflow-content" id="workflowContent">
+            <div class="workflow-step">
+                <h4>📊 Data Input</h4>
+                <p>Upload CSV or select sample dataset with automatic data type detection</p>
+            </div>
+            <div class="workflow-step">
+                <h4>🔧 Preprocessing</h4>
+                <p>Feature encoding, scaling, and intelligent missing value handling</p>
+            </div>
+            <div class="workflow-step">
+                <h4>🤖 Model Training</h4>
+                <p>Tests 12+ ML algorithms with hyperparameter tuning via GridSearchCV</p>
+            </div>
+            <div class="workflow-step">
+                <h4>🏆 Model Selection</h4>
+                <p>Compares performance using cross-validation and selects best model</p>
+            </div>
+            <div class="workflow-step">
+                <h4>📈 Analysis & Export</h4>
+                <p>SHAP explainability, visualizations, and downloadable trained model</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    function toggleWorkflow() {
+        const content = document.getElementById('workflowContent');
+        const arrow = document.getElementById('workflowArrow');
+        
+        if (content.classList.contains('expanded')) {
+            content.classList.remove('expanded');
+            arrow.classList.remove('rotated');
+        } else {
+            content.classList.add('expanded');
+            arrow.classList.add('rotated');
+        }
+    }
+    </script>
     """,
     unsafe_allow_html=True
 )
@@ -394,18 +588,23 @@ st.sidebar.markdown(
 # =============================
 # This section displays different content based on whether a file has been uploaded
 
-# --- Case 1: Dataset Uploaded ---
-# If user has uploaded a file, show the main dashboard and analysis tools
-if uploaded_file is not None:
+# --- Case 1: Dataset Uploaded or Loaded from Samples---
+# If user has uploaded a file OR loaded from sample datasets, show the main dashboard and analysis tools
+if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_sample') and st.session_state.dataset_loaded_from_sample and st.session_state.loaded_df is not None):
     # Read the CSV file into a pandas DataFrame for analysis
-    df = pd.read_csv(uploaded_file)
+    if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        dataset_name = uploaded_file.name
+    else:
+        df = st.session_state.loaded_df
+        dataset_name = st.session_state.selected_dataset
     
     # --- Dataset Overview Section ---
     # Display summary statistics about the uploaded dataset
     st.markdown(
-        """
+        f"""
         <div style="text-align: left; margin-bottom: 1.5rem;">
-            <h2 style="color: white; font-size: 2rem; font-weight: 700; margin: 0 0 1rem 0;">📄 Dataset Overview</h2>
+            <h2 style="color: white; font-size: 2rem; font-weight: 700; margin: 0 0 1rem 0;">📄 {dataset_name} - Dataset Overview</h2>
         </div>
         """,
         unsafe_allow_html=True
@@ -457,9 +656,15 @@ if uploaded_file is not None:
     
     with col1:
         # Dropdown with all column names from the dataset
+        # If loaded from sample, pre-select the target hint
+        target_index = 0
+        if hasattr(st.session_state, 'target_hint') and st.session_state.target_hint and st.session_state.target_hint in df.columns:
+            target_index = list(df.columns).index(st.session_state.target_hint)
+            
         target_column = st.selectbox(
             "Select Target Column", 
             df.columns,  # All columns as options
+            index=target_index,
             help="Choose the column you want to predict"
         )
     
@@ -818,19 +1023,29 @@ else:
         unsafe_allow_html=True
     )
     
-    # --- Sample Datasets Information ---
-    # Shows available example datasets for users to try
+    # --- Sample Datasets Section ---
+    # Shows available local datasets as clickable cards
     st.markdown("### 📂 Sample Datasets Available")
+    
+    # Define local datasets with their file paths and display information
     sample_datasets = [
-        {"name": "🌸 Iris", "description": "Classic flower classification", "features": "4", "rows": "150"},
-        {"name": "🚢 Titanic", "description": "Survival prediction", "features": "12", "rows": "891"},
-        {"name": "🏠 Housing", "description": "Price prediction", "features": "13", "rows": "506"},
-        {"name": "❤️ Heart Disease", "description": "Heart Disease prediction", "features": "12", "rows": "919"},
-        {"name": "🏦 Bank Marketing", "description": "Campaign success prediction", "features": "20", "rows": "4521"},
-        {"name": "💼 Life Insurance", "description": "Insurance claim prediction", "features": "7", "rows": "1000"},
+        {"name": "❤️ Heart Disease", "description": "Heart Disease prediction", "file": "heart.csv", "target_hint": "target"},
+        {"name": "🧬 Life Insurance", "description": "Insurance claim prediction", "file": "life_insurance.csv", "target_hint": "claim"},
+        {"name": "🧊🚢 Titanic", "description": "Survival prediction", "file": "titanic.csv", "target_hint": "Survived"},
+        {"name": "🏦 Bank Marketing", "description": "Campaign success prediction", "file": "bank.csv", "target_hint": "y"},
+        {"name": "🌸 Iris", "description": "Classic flower classification", "file": "iris.csv", "target_hint": "species"},
+        {"name": "🏠 Housing", "description": "Price prediction", "file": "housing.csv", "target_hint": "median_house_value"},
     ]
     
-    # Display datasets in a 2-column grid layout
+    # Initialize session state for selected dataset
+    if 'selected_dataset' not in st.session_state:
+        st.session_state.selected_dataset = None
+    if 'loaded_df' not in st.session_state:
+        st.session_state.loaded_df = None
+    if 'target_hint' not in st.session_state:
+        st.session_state.target_hint = None
+    
+    # Display datasets in a 2-column grid layout with styled cards
     for i in range(0, len(sample_datasets), 2):  # Process 2 datasets at a time
         col1, col2 = st.columns(2)
         
@@ -838,31 +1053,95 @@ else:
         if i < len(sample_datasets):
             with col1:
                 dataset = sample_datasets[i]
-                st.markdown(
-                    f"""
-                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid #4ecdc4; margin-bottom: 1rem;">
-                        <h4 style="color: white; margin: 0;">{dataset['name']}</h4>
-                        <p style="color: rgba(255,255,255,0.7); margin: 0.5rem 0 0 0;">{dataset['description']}</p>
-                        <small style="color: rgba(255,255,255,0.5);">{dataset['features']} features • {dataset['rows']} rows</small>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                # Get dataset info first to display in card
+                dataset_path = f"Datasets/{dataset['file']}"
+                try:
+                    if os.path.exists(dataset_path):
+                        temp_df = pd.read_csv(dataset_path)
+                        rows = temp_df.shape[0]
+                        features = temp_df.shape[1]
+                        
+                        # Create styled card with dataset information
+                        card_html = f"""
+                        <div class="dataset-card" style="
+                            border-left: 4px solid #4ecdc4; 
+                            background: rgba(78, 205, 196, 0.1); 
+                            padding: 1rem; 
+                            border-radius: 8px; 
+                            margin-bottom: 0.8rem;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onclick="document.getElementById('load_btn_{i}').click();">
+                            <h3 style="color: white; margin: 0 0 0.3rem 0; font-size: 1.1rem;">{dataset['name']}</h3>
+                            <p style="color: rgba(255,255,255,0.8); margin: 0 0 0.5rem 0; font-size: 0.85rem;">{dataset['description']}</p>
+                            <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 0.8rem;">{features} features • {rows} rows</p>
+                            <p style="color: #feca57; margin: 0.3rem 0 0 0; font-size: 0.8rem;">💡 Target: {dataset['target_hint']}</p>
+                        </div>
+                        """
+                        st.markdown(card_html, unsafe_allow_html=True)
+                        
+                        # Full width load button that gets triggered by card click
+                        if st.button("Load Dataset", key=f"load_btn_{i}", help=f"Load {dataset['name']} dataset", use_container_width=True):
+                            st.session_state.loaded_df = temp_df
+                            st.session_state.selected_dataset = dataset['name']
+                            st.session_state.target_hint = dataset['target_hint']
+                            # Set the loaded dataset as if it was uploaded
+                            st.session_state.dataset_loaded_from_sample = True
+                            st.success(f"✅ {dataset['name']} dataset loaded successfully!")
+                            st.rerun()
+                    else:
+                        st.error(f"❌ Dataset file not found: {dataset_path}")
+                except Exception as e:
+                    st.error(f"❌ Error loading dataset info: {str(e)}")
         
         # Right column dataset
         if i + 1 < len(sample_datasets):
             with col2:
                 dataset = sample_datasets[i + 1]
-                st.markdown(
-                    f"""
-                    <div style="background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 8px; border-left: 4px solid #ff6b6b; margin-bottom: 1rem;">
-                        <h4 style="color: white; margin: 0;">{dataset['name']}</h4>
-                        <p style="color: rgba(255,255,255,0.7); margin: 0.5rem 0 0 0;">{dataset['description']}</p>
-                        <small style="color: rgba(255,255,255,0.5);">{dataset['features']} features • {dataset['rows']} rows</small>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                # Get dataset info first to display in card
+                dataset_path = f"Datasets/{dataset['file']}"
+                try:
+                    if os.path.exists(dataset_path):
+                        temp_df = pd.read_csv(dataset_path)
+                        rows = temp_df.shape[0]
+                        features = temp_df.shape[1]
+                        
+                        # Determine card color based on index
+                        colors = ["#ff6b6b", "#4ecdc4", "#feca57", "#ff9ff3", "#54a0ff", "#5f27cd"]
+                        color = colors[(i + 1) % len(colors)]
+                        
+                        # Create styled card with dataset information
+                        card_html = f"""
+                        <div class="dataset-card" style="
+                            border-left: 4px solid {color}; 
+                            background: rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.1); 
+                            padding: 1rem; 
+                            border-radius: 8px; 
+                            margin-bottom: 0.8rem;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onclick="document.getElementById('load_btn_{i+1}').click();">
+                            <h3 style="color: white; margin: 0 0 0.3rem 0; font-size: 1.1rem;">{dataset['name']}</h3>
+                            <p style="color: rgba(255,255,255,0.8); margin: 0 0 0.5rem 0; font-size: 0.85rem;">{dataset['description']}</p>
+                            <p style="color: rgba(255,255,255,0.7); margin: 0; font-size: 0.8rem;">{features} features • {rows} rows</p>
+                            <p style="color: #feca57; margin: 0.3rem 0 0 0; font-size: 0.8rem;">💡 Target: {dataset['target_hint']}</p>
+                        </div>
+                        """
+                        st.markdown(card_html, unsafe_allow_html=True)
+                        
+                        # Full width load button that gets triggered by card click
+                        if st.button("Load Dataset", key=f"load_btn_{i+1}", help=f"Load {dataset['name']} dataset", use_container_width=True):
+                            st.session_state.loaded_df = temp_df
+                            st.session_state.selected_dataset = dataset['name']
+                            st.session_state.target_hint = dataset['target_hint']
+                            # Set the loaded dataset as if it was uploaded
+                            st.session_state.dataset_loaded_from_sample = True
+                            st.success(f"✅ {dataset['name']} dataset loaded successfully!")
+                            st.rerun()
+                    else:
+                        st.error(f"❌ Dataset file not found: {dataset_path}")
+                except Exception as e:
+                    st.error(f"❌ Error loading dataset info: {str(e)}")
     
     # Pro tip for users
-    st.info("💡 **Pro Tip**: Start with one of the sample dataset to test the pipeline!")
+    st.info("💡 **Pro Tip**: Click on any dataset card above to instantly load and explore the data!")
