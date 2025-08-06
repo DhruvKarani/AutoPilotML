@@ -346,89 +346,6 @@ st.markdown(
         box-shadow: 0 8px 20px rgba(0,0,0,0.3) !important;
         border-left-width: 6px !important;
     }
-    
-    /* Workflow dropdown in sidebar */
-    .workflow-dropdown {
-        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-        border-radius: 12px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-        border: 2px solid rgba(255,255,255,0.2);
-        backdrop-filter: blur(10px);
-        transition: all 0.3s ease;
-        margin-bottom: 1.5rem;
-        width: 100%;
-    }
-    
-    .workflow-dropdown:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 35px rgba(0,0,0,0.4);
-    }
-    
-    .workflow-toggle {
-        padding: 12px 16px;
-        cursor: pointer;
-        user-select: none;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-weight: 600;
-        color: white;
-        font-size: 0.9rem;
-        border-radius: 10px;
-        transition: all 0.3s ease;
-    }
-    
-    .workflow-toggle:hover {
-        background: rgba(255,255,255,0.1);
-    }
-    
-    .workflow-content {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.3s ease;
-        background: rgba(255,255,255,0.05);
-        border-radius: 0 0 10px 10px;
-        margin-top: 2px;
-    }
-    
-    .workflow-content.expanded {
-        max-height: 400px;
-        padding: 16px;
-    }
-    
-    .workflow-step {
-        margin-bottom: 12px;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .workflow-step:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-    }
-    
-    .workflow-step h4 {
-        color: #feca57;
-        margin: 0 0 4px 0;
-        font-size: 0.85rem;
-        font-weight: 600;
-    }
-    
-    .workflow-step p {
-        color: rgba(255,255,255,0.9);
-        margin: 0;
-        font-size: 0.75rem;
-        line-height: 1.4;
-    }
-    
-    .workflow-arrow {
-        transition: transform 0.3s ease;
-        color: rgba(255,255,255,0.8);
-    }
-    
-    .workflow-arrow.rotated {
-        transform: rotate(180deg);
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -463,56 +380,28 @@ st.sidebar.markdown(
     unsafe_allow_html=True
 )
 
-# --- Workflow Dropdown in Sidebar ---
-# This creates a dropdown in the sidebar explaining the workflow
-st.sidebar.markdown(
-    """
-    <div class="workflow-dropdown" id="workflowDropdown">
-        <div class="workflow-toggle" onclick="toggleWorkflow()">
-            <span>🔄 How it Works</span>
-            <span class="workflow-arrow" id="workflowArrow">▼</span>
-        </div>
-        <div class="workflow-content" id="workflowContent">
-            <div class="workflow-step">
-                <h4>📊 Data Input</h4>
-                <p>Upload CSV or select sample dataset with automatic data type detection</p>
-            </div>
-            <div class="workflow-step">
-                <h4>🔧 Preprocessing</h4>
-                <p>Feature encoding, scaling, and intelligent missing value handling</p>
-            </div>
-            <div class="workflow-step">
-                <h4>🤖 Model Training</h4>
-                <p>Tests 12+ ML algorithms with hyperparameter tuning via GridSearchCV</p>
-            </div>
-            <div class="workflow-step">
-                <h4>🏆 Model Selection</h4>
-                <p>Compares performance using cross-validation and selects best model</p>
-            </div>
-            <div class="workflow-step">
-                <h4>📈 Analysis & Export</h4>
-                <p>SHAP explainability, visualizations, and downloadable trained model</p>
-            </div>
-        </div>
-    </div>
-    
-    <script>
-    function toggleWorkflow() {
-        const content = document.getElementById('workflowContent');
-        const arrow = document.getElementById('workflowArrow');
+# --- Workflow Information in Sidebar ---
+# This creates an expandable section in the sidebar explaining the workflow
+with st.sidebar.expander("🔄 How it Works", expanded=False):
+    st.markdown(
+        """
+        **📊 Data Input**  
+        Upload CSV or select sample dataset with automatic data type detection
         
-        if (content.classList.contains('expanded')) {
-            content.classList.remove('expanded');
-            arrow.classList.remove('rotated');
-        } else {
-            content.classList.add('expanded');
-            arrow.classList.add('rotated');
-        }
-    }
-    </script>
-    """,
-    unsafe_allow_html=True
-)
+        **🔧 Preprocessing**  
+        Feature encoding, scaling, and intelligent missing value handling
+        
+        **🤖 Model Training**  
+        Tests 12+ ML algorithms with hyperparameter tuning via GridSearchCV
+        
+        **🏆 Model Selection**  
+        Compares performance using cross-validation and selects best model
+        
+        **📈 Analysis & Export**  
+        SHAP explainability, visualizations, and downloadable trained model
+        """,
+        help="AutoPilotML follows a systematic 5-step process to build and optimize your machine learning models automatically."
+    )
 
 # --- Dataset Upload Section ---
 # File uploader widget that accepts CSV files
@@ -555,6 +444,7 @@ with st.sidebar.expander("⚙️ Advanced Settings", expanded=True):
     # Option to force clean regression targets even if data quality is questionable
     force_clean_regression = st.checkbox(
         "Force Clean Regression Targets", 
+        value=True,  # Always checked by default
         help="Force clean regression targets even with high bad ratio"
     )
     
@@ -808,25 +698,18 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
                 )
 
                 # --- Performance Metrics Display ---
-                # Shows detailed performance metrics in two columns
+                # Shows detailed performance metrics
                 st.subheader("📊 Model Performance")
-                metrics_col1, metrics_col2 = st.columns(2)
                 
-                with metrics_col1:
-                    st.write("**Performance Metrics:**")
-                    # Loop through all metrics and display them
-                    for key, value in results['metrics'].items():
-                        if isinstance(value, float):
-                            # Format floating point numbers to 4 decimal places
-                            st.write(f"• **{key.upper()}**: {value:.4f}")
-                        else:
-                            # Display non-numeric values as-is
-                            st.write(f"• **{key.upper()}**: {value}")
-
-                with metrics_col2:
-                    st.write("**Model Summary:**")
-                    # Display text summary of the best model
-                    st.write(results['summary'])
+                st.write("**Performance Metrics:**")
+                # Loop through all metrics and display them
+                for key, value in results['metrics'].items():
+                    if isinstance(value, float):
+                        # Format floating point numbers to 4 decimal places
+                        st.write(f"• **{key.upper()}**: {value:.4f}")
+                    else:
+                        # Display non-numeric values as-is
+                        st.write(f"• **{key.upper()}**: {value}")
 
                 # --- Developer Logs Section ---
                 # Collapsible section showing detailed technical logs
