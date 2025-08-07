@@ -36,20 +36,20 @@ st.markdown(
     
     /* Main app background and font styling */
     .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Purple gradient background */
+        background: linear-gradient(135deg, #475569 0%, #334155 100%);  /* Elegant slate gradient background */
         font-family: 'Inter', sans-serif;  /* Modern font for better readability */
     }
     
     /* Header styling with animated gradient background */
     .main-header {
-        background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);  /* Multi-color gradient */
+        background: linear-gradient(90deg, #64748b, #94a3b8, #cbd5e1, #e2e8f0, #f1f5f9);  /* Elegant silver to light gradient */
         background-size: 300% 300%;  /* Makes gradient larger for animation */
         animation: gradient 8s ease infinite;  /* Animates the gradient colors */
         padding: 2rem;
         border-radius: 15px;
         text-align: center;
         margin-bottom: 2rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);  /* Drop shadow for depth */
+        box-shadow: 0 10px 30px rgba(148, 163, 184, 0.3);  /* Silver shadow for depth */
     }
     
     /* Responsive header layout for different screen sizes */
@@ -62,7 +62,7 @@ st.markdown(
     
     /* Control panel header styling */
     .control-panel-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
         padding: 1.5rem;
         border-radius: 15px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.3);
@@ -106,12 +106,12 @@ st.markdown(
     
     /* Sidebar background styling - targets Streamlit's sidebar classes */
     .css-1d391kg {
-        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);  /* Dark gradient */
+        background: linear-gradient(180deg, #64748b 0%, #475569 100%);  /* Elegant slate gradient */
     }
     
     /* Minimized sidebar styling */
     .css-1cypcdb {
-        background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+        background: linear-gradient(180deg, #64748b 0%, #475569 100%);
     }
     
     /* Sidebar collapse button styling - multiple selectors for different Streamlit versions */
@@ -122,11 +122,11 @@ st.markdown(
     
     /* Custom metric cards styling - these are the main info boxes */
     .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Purple gradient background */
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);  /* Slate gradient */
         padding: 1.5rem;          /* Inner spacing */
         border-radius: 12px;      /* Rounded corners */
-        box-shadow: 0 8px 25px rgba(0,0,0,0.2);  /* Drop shadow for depth */
-        border: 1px solid rgba(255,255,255,0.1); /* Subtle border */
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);  /* Deeper shadow for depth */
+        border: 1px solid rgba(148, 163, 184, 0.4); /* Silver border */
         backdrop-filter: blur(10px);  /* Blur effect for modern look */
         margin: 0.5rem 0;         /* Vertical spacing between cards */
         position: relative;       /* For positioning child elements */
@@ -137,8 +137,8 @@ st.markdown(
     /* Hover effect for metric cards - makes them "lift up" */
     .metric-card:hover {
         transform: translateY(-5px);  /* Moves card up slightly */
-        box-shadow: 0 15px 35px rgba(0,0,0,0.3);  /* Larger shadow */
-        border: 1px solid rgba(255,255,255,0.3);  /* Brighter border */
+        box-shadow: 0 15px 35px rgba(148, 163, 184, 0.5);  /* Silver shadow */
+        border: 1px solid rgba(148, 163, 184, 0.7);  /* Brighter silver border */
     }
     
     /* Tooltip system - shows helpful information on hover */
@@ -151,8 +151,8 @@ st.markdown(
     .tooltip .tooltiptext {
         visibility: hidden;      /* Hidden by default */
         width: 320px;           /* Fixed width for consistency */
-        background: rgba(44, 62, 80, 0.98);  /* Dark semi-transparent background */
-        color: white;           /* White text */
+        background: rgba(51, 65, 85, 0.95);  /* Dark slate semi-transparent background */
+        color: #f1f5f9;         /* Light silver text */
         text-align: left;       /* Left-aligned text */
         border-radius: 12px;    /* Rounded corners */
         padding: 16px;          /* Inner spacing */
@@ -165,8 +165,8 @@ st.markdown(
         transition: all 0.3s ease;  /* Smooth fade in/out */
         font-size: 0.95rem;    /* Readable font size */
         line-height: 1.5;      /* Good line spacing */
-        box-shadow: 0 12px 40px rgba(0,0,0,0.5);  /* Drop shadow */
-        border: 2px solid rgba(255,255,255,0.2);  /* Subtle border */
+        box-shadow: 0 12px 40px rgba(0,0,0,0.5);  /* Soft drop shadow */
+        border: 2px solid rgba(148, 163, 184, 0.5);  /* Silver border */
         backdrop-filter: blur(10px);  /* Blur background behind tooltip */
     }
     
@@ -179,7 +179,7 @@ st.markdown(
         margin-left: -10px;   /* Offset to center the arrow */
         border-width: 10px;   /* Size of the arrow */
         border-style: solid;  /* Solid border */
-        border-color: rgba(44, 62, 80, 0.98) transparent transparent transparent;  /* Arrow color */
+        border-color: rgba(51, 65, 85, 0.95) transparent transparent transparent;  /* Arrow color */
     }
     
     /* Show tooltip on hover */
@@ -200,14 +200,14 @@ st.markdown(
     
     /* Button styling for all Streamlit buttons */
     .stButton > button {
-        background: linear-gradient(45deg, #ff6b6b, #4ecdc4);  /* Gradient background */
+        background: linear-gradient(45deg, #64748b, #94a3b8);  /* Silver gradient background */
         color: white;            /* White text */
         border: none;           /* Remove default border */
         padding: 0.75rem 2rem;  /* Inner spacing */
         border-radius: 25px;    /* Rounded button */
         font-weight: 600;       /* Semi-bold text */
         font-size: 1.1rem;      /* Larger text */
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);  /* Drop shadow */
+        box-shadow: 0 5px 15px rgba(148, 163, 184, 0.4);  /* Silver drop shadow */
         transition: all 0.3s ease;  /* Smooth hover effects */
         transform: translateY(0);    /* Starting position for animation */
     }
@@ -215,16 +215,16 @@ st.markdown(
     /* Button hover effect */
     .stButton > button:hover {
         transform: translateY(-2px);  /* Lift up on hover */
-        box-shadow: 0 8px 25px rgba(0,0,0,0.3);  /* Larger shadow */
-        background: linear-gradient(45deg, #4ecdc4, #ff6b6b);  /* Reverse gradient */
+        box-shadow: 0 8px 25px rgba(148, 163, 184, 0.6);  /* Larger silver shadow */
+        background: linear-gradient(45deg, #94a3b8, #64748b);  /* Reverse gradient */
     }
     
     /* File uploader widget styling */
     .stFileUploader {
-        background: rgba(255,255,255,0.05);  /* Subtle white overlay */
+        background: rgba(148, 163, 184, 0.15);  /* Subtle silver overlay */
         border-radius: 10px;                 /* Rounded corners */
         padding: 1rem;                       /* Inner spacing */
-        border: 2px dashed rgba(255,255,255,0.3);  /* Dashed border for drag-drop area */
+        border: 2px dashed rgba(148, 163, 184, 0.5);  /* Dashed silver border for drag-drop area */
     }
     
     /* Success message styling */
@@ -251,9 +251,9 @@ st.markdown(
     
     /* Individual tab styling */
     .stTabs [data-baseweb="tab"] {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);  /* Purple gradient */
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);  /* Slate gradient */
         border-radius: 8px;      /* Rounded corners */
-        color: white;           /* White text */
+        color: #f1f5f9;         /* Light silver text */
         font-weight: 600;       /* Semi-bold */
         padding: 8px 16px;      /* Inner spacing */
         margin: 0 1px;          /* Small gap between tabs */
@@ -265,27 +265,28 @@ st.markdown(
     
     /* Tab hover effect */
     .stTabs [data-baseweb="tab"]:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);  /* Reverse gradient on hover */
+        background: linear-gradient(135deg, #475569 0%, #334155 100%);  /* Darker slate gradient on hover */
         transform: translateY(-1px);  /* Slight lift effect */
     }
     
     /* Active/selected tab styling */
     .stTabs [data-baseweb="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);  /* Teal gradient for active */
-        box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);  /* Glowing shadow */
+        background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%);  /* Silver gradient for active */
+        color: white;           /* White text for active tab */
+        box-shadow: 0 4px 15px rgba(148, 163, 184, 0.6);  /* Glowing silver shadow */
     }
     
     /* Loading spinner color customization */
     .stSpinner {
-        color: #4ecdc4;  /* Teal color for loading spinner */
+        color: #64748b;  /* Silver color for loading spinner */
     }
     
     /* Warning message styling */
     .stWarning {
-        background: linear-gradient(90deg, #f7971e, #ffd200);  /* Orange to yellow gradient */
+        background: linear-gradient(90deg, #f59e0b, #fbbf24);  /* Amber gradient */
         border-radius: 10px;
         padding: 1rem;
-        color: #2c3e50;    /* Dark text for readability */
+        color: #1f2937;    /* Dark text for readability */
         font-weight: 600;  /* Semi-bold text */
     }
     
@@ -355,9 +356,9 @@ st.markdown(
 # This creates the main title banner at the top of the page with animated gradient background
 st.markdown(
     """
-    <div style="background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57); background-size: 300% 300%; animation: gradient 8s ease infinite; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 1rem;">
-        <h1 style="color: black; font-size: 2.5rem; font-weight: 700; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🚀 AutoPilotML Pipeline</h1>
-        <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-top: 0.5rem; font-weight: 300;">Your Advanced Machine Learning Pipeline Without Any Leakage</p>
+    <div style="background: linear-gradient(90deg, #64748b, #94a3b8, #cbd5e1, #e2e8f0, #f1f5f9); background-size: 300% 300%; animation: gradient 8s ease infinite; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(148, 163, 184, 0.3); margin-bottom: 1rem;">
+        <h1 style="color: #1e293b; font-size: 2.5rem; font-weight: 700; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">🚀 AutoPilotML Pipeline</h1>
+        <p style="color: rgba(30, 41, 59, 0.8); font-size: 1.1rem; margin-top: 0.5rem; font-weight: 300;">Your Advanced Machine Learning Pipeline Without Any Leakage</p>
     </div>
     """,
     unsafe_allow_html=True
@@ -372,8 +373,8 @@ st.markdown(
 # This displays an informational header in the sidebar explaining what the controls do
 st.sidebar.markdown(
     """
-    <div style="background: linear-gradient(135deg, #45b7d1 0%, #96ceb4 100%); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
-        <h3 style="color: black; margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600;">🛠️ Control Panel</h3>
+    <div style="background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(148, 163, 184, 0.4);">
+        <h3 style="color: white; margin: 0 0 0.5rem 0; font-size: 1.3rem; font-weight: 600;">🛠️ Control Panel</h3>
         <p style="color: rgba(255,255,255,0.85); font-size: 1rem; margin: 0;">Configure your ML pipeline settings and manage your workflow from here.</p>
     </div>
     """,
@@ -382,23 +383,41 @@ st.sidebar.markdown(
 
 # --- Workflow Information in Sidebar ---
 # This creates an expandable section in the sidebar explaining the workflow
-with st.sidebar.expander("🔄 How it Works", expanded=False):
+with st.sidebar.expander("🔄 How this Pipeline Works", expanded=False):
     st.markdown(
         """
-        **📊 Data Input**  
-        Upload CSV or select sample dataset with automatic data type detection
-        
-        **🔧 Preprocessing**  
-        Feature encoding, scaling, and intelligent missing value handling
-        
-        **🤖 Model Training**  
-        Tests 12+ ML algorithms with hyperparameter tuning via GridSearchCV
-        
-        **🏆 Model Selection**  
-        Compares performance using cross-validation and selects best model
-        
-        **📈 Analysis & Export**  
-        SHAP explainability, visualizations, and downloadable trained model
+**1. 📥 Data Input**  
+Upload dataset or use sample CSV. Task type auto-detected.
+
+**2. 🧹 Data Cleaning**  
+Missing values, duplicates handled automatically.
+
+**3. 🧪 Initial Feature Engineering**  
+Encoding for categorical, scaling for numerical variables.
+
+**4. ⚡ Baseline Model Training**  
+Train top ML models with default settings.
+
+**5. 📊 Initial Evaluation**  
+Performance metrics (Accuracy, F1, RMSE) comparison.
+
+**6. 🔍 SHAP Explainability**  
+Compute SHAP values for feature importance.
+
+**7. 🧠 SHAP-based Feature Refinement**  
+Drop/enhance features based on SHAP scores.
+
+**8. 🔁 Hyperparameter Tuning**  
+GridSearchCV on top models with best parameters.
+
+**9. 🏆 Final Evaluation**  
+Updated metrics, leaderboard, best model summary.
+
+**10. 📤 Export & Save**  
+Download model, metrics, SHAP plots, logs.
+
+---
+✅ Zero manual tuning needed – upload data and go!
         """,
         help="AutoPilotML follows a systematic 5-step process to build and optimize your machine learning models automatically."
     )
@@ -459,7 +478,7 @@ with st.sidebar.expander("⚙️ Advanced Settings", expanded=True):
 st.sidebar.markdown("---")  # Horizontal line separator
 st.sidebar.markdown(
     """
-    <div style="background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); padding: 1rem; border-radius: 10px; text-align: center;">
+    <div style="background: linear-gradient(135deg, #64748b 0%, #94a3b8 100%); padding: 1rem; border-radius: 10px; text-align: center;">
         <h4 style="color: white; margin: 0;">📊 Pipeline Features</h4>
         <ul style="color: rgba(255,255,255,0.9); text-align: left; margin: 0.5rem 0 0 0;">
             <li>🤖 12+ ML Algorithms</li>
@@ -494,7 +513,7 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
     st.markdown(
         f"""
         <div style="text-align: left; margin-bottom: 1.5rem;">
-            <h2 style="color: white; font-size: 2rem; font-weight: 700; margin: 0 0 1rem 0;">📄 {dataset_name} - Dataset Overview</h2>
+            <h2 style="color: #f1f5f9; font-size: 2rem; font-weight: 700; margin: 0 0 1rem 0;">📄 {dataset_name} - Dataset Overview</h2>
         </div>
         """,
         unsafe_allow_html=True
@@ -667,7 +686,7 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
                     <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
                         <div class="metric-card tooltip" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;">
                             <h3 style="color: #4ecdc4; margin: 0;">🎯 Task Type</h3>
-                            <h2 style="color: white; margin: 0.5rem 0 0 0;">{results['task'].capitalize()}</h2>
+                            <h2 style="color: #e2e8f0; margin: 0.5rem 0 0 0;">{results['task'].capitalize()}</h2>
                             <span class="tooltiptext">
                                 <strong>Task Type:</strong> Indicates whether this is a classification problem 
                                 (predicting categories) or regression problem (predicting continuous values). 
@@ -676,7 +695,7 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
                         </div>
                         <div class="metric-card tooltip" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;">
                             <h3 style="color: #ff6b6b; margin: 0;">🏆 Best Model</h3>
-                            <h2 style="color: white; margin: 0.5rem 0 0 0;">{results['best_model']}</h2>
+                            <h2 style="color: #e2e8f0; margin: 0.5rem 0 0 0;">{results['best_model']}</h2>
                             <span class="tooltiptext">
                                 <strong>Best Model:</strong> The machine learning algorithm that performed best 
                                 on your dataset. AutoPilotML tested 12+ different algorithms and selected this one 
@@ -685,7 +704,7 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
                         </div>
                         <div class="metric-card tooltip" style="flex: 1; min-width: 250px; max-width: 350px; text-align: center;">
                             <h3 style="color: {rating_color}; margin: 0;">⭐ Overall Rating</h3>
-                            <h2 style="color: white; margin: 0.5rem 0 0 0;">{rating:.1f}/10</h2>
+                            <h2 style="color: #e2e8f0; margin: 0.5rem 0 0 0;">{rating:.1f}/10</h2>
                             <span class="tooltiptext">
                                 <strong>Overall Rating:</strong> A comprehensive score (1-10) based on model accuracy, 
                                 cross-validation stability, and data quality. <br><br>
@@ -821,8 +840,8 @@ else:
     st.markdown(
         """
         <div class="metric-card" style="text-align: center; margin: 2rem 0;">
-            <h2 style="color: white; margin: 0 0 1rem 0;">👋 Welcome to AutoPilotML!</h2>
-            <p style="color: rgba(255,255,255,0.8); font-size: 1.1rem; line-height: 1.6;">
+            <h2 style="color: #f1f5f9; margin: 0 0 1rem 0;">👋 Welcome to AutoPilotML!</h2>
+            <p style="color: #cbd5e1; font-size: 1.1rem; line-height: 1.6;">
                 Your AI-powered machine learning automation platform. Simply upload your dataset 
                 and let AutoPilotML handle the rest!
             </p>
@@ -843,7 +862,7 @@ else:
             """
             <div class="metric-card" style="text-align: center;">
                 <h3 style="color: #4ecdc4; margin: 0 0 1rem 0;">🤖 Smart Automation</h3>
-                <ul style="color: rgba(255,255,255,0.8); text-align: left; padding-left: 1rem;">
+                <ul style="color: #cbd5e1; text-align: left; padding-left: 1rem;">
                     <li>Auto feature detection</li>
                     <li>Intelligent preprocessing</li>
                     <li>Missing value handling</li>
@@ -860,7 +879,7 @@ else:
             """
             <div class="metric-card" style="text-align: center;">
                 <h3 style="color: #ff6b6b; margin: 0 0 1rem 0;">🏆 Model Training</h3>
-                <ul style="color: rgba(255,255,255,0.8); text-align: left; padding-left: 1rem;">
+                <ul style="color: #cbd5e1; text-align: left; padding-left: 1rem;">
                     <li>12+ ML algorithms</li>
                     <li>Hyperparameter tuning</li>
                     <li>Cross-validation and GridSearchCV </li>
@@ -877,7 +896,7 @@ else:
             """
             <div class="metric-card" style="text-align: center;">
                 <h3 style="color: #feca57; margin: 0 0 1rem 0;">📊 Analysis & Export</h3>
-                <ul style="color: rgba(255,255,255,0.8); text-align: left; padding-left: 1rem;">
+                <ul style="color: #cbd5e1; text-align: left; padding-left: 1rem;">
                     <li>SHAP explainability</li>
                     <li>Interactive visualizations</li>
                     <li>Model comparison</li>
@@ -893,8 +912,8 @@ else:
     st.markdown("### 🎯 Getting Started")
     st.markdown(
         """
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 10px; margin: 1rem 0;">
-            <ol style="color: white; font-size: 1.1rem; line-height: 1.8;">
+        <div style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); padding: 1.5rem; border-radius: 10px; margin: 1rem 0;">
+            <ol style="color: #f1f5f9; font-size: 1.1rem; line-height: 1.8;">
                 <li><strong>📁 Upload</strong> your CSV dataset using the sidebar</li>
                 <li><strong>🎯 Select</strong> your target column (what you want to predict)</li>
                 <li><strong>⚙️ Configure</strong> advanced settings if needed</li>
