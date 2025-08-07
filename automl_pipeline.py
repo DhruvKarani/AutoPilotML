@@ -727,7 +727,7 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
             'Random Forest': RandomForestRegressor(random_state=42),
             'KNN': KNeighborsRegressor()
         }
-        scoring = 'neg_mean_absolute_error'
+        scoring = 'r2'  # R² score - higher is better (more intuitive)
         results["logs"].append("✅ Regression models defined (Phase 1):")
 
     for model_name in simple_models.keys():
@@ -790,21 +790,26 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
                 'time': elapsed_time
             }
             
-            # Display results
+            # Display results - R² and accuracy are positive (higher is better)
+            # Negative error metrics need to be converted to positive for display
             if scoring.startswith('neg'):
-                display_score = abs(mean_score)
+                display_score = abs(mean_score)  # Convert negative error to positive
                 simple_model_scores[name] = display_score
-                results["logs"].append(f"   📊 CV Score: {display_score:.4f} (±{std_score:.4f})")
+                results["logs"].append(f"   📊 CV Score (as positive error): {display_score:.4f} (±{abs(std_score):.4f})")
             else:
-                display_score = mean_score
+                display_score = mean_score  # R² and accuracy are already positive
                 simple_model_scores[name] = display_score
-                results["logs"].append(f"   📊 CV Score: {display_score:.4f} (±{std_score:.4f})")
+                results["logs"].append(f"   📊 CV Score (R² or Accuracy): {display_score:.4f} (±{std_score:.4f})")
             
             results["logs"].append(f"   ⏱️ Training time: {elapsed_time:.2f}s")
             
             # Fix the complex f-string by using a simpler approach
-            score_list = [f'{abs(s) if scoring.startswith("neg") else s:.3f}' for s in scores]
-            results["logs"].append(f"   🎯 Individual fold scores: {score_list}")
+            if scoring.startswith('neg'):
+                score_list = [f'{abs(s):.3f}' for s in scores]  # Show positive error values
+                results["logs"].append(f"   🎯 Individual fold scores (as positive): {score_list}")
+            else:
+                score_list = [f'{s:.3f}' for s in scores]  # Show R² or accuracy as-is
+                results["logs"].append(f"   🎯 Individual fold scores: {score_list}")
             
         except Exception as e:
             results["logs"].append(f"   ❌ Failed: {str(e)}")
@@ -1029,7 +1034,13 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         
         grid_results = {}
         best_model_name = None
-        best_model_score = 0  # Initialize to 0 since we always use positive display_score
+        # Initialize based on scoring metric
+        if scoring.startswith('neg'):
+            best_model_score = 0  # For negative error metrics, 0 is worst when converted to positive
+        elif scoring == 'r2':
+            best_model_score = -float('inf')  # R² can be negative, so start from negative infinity
+        else:
+            best_model_score = 0  # For accuracy and other positive metrics
         
         for name, model in advanced_models.items():
             results["logs"].append(f"\n🔍 GridSearchCV: {name}")
@@ -1081,11 +1092,15 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
                 end_time = time.time()
                 training_time = end_time - start_time
                 
-                # Store results
+                # Store results with proper score handling
                 if scoring.startswith('neg'):
-                    display_score = abs(cv_score)
+                    display_score = abs(cv_score)  # Convert negative error to positive for display
+                    comparison_score = display_score  # Use positive value for comparison (higher is better)
+                    score_type = "Error (lower is better, shown as positive)"
                 else:
-                    display_score = cv_score
+                    display_score = cv_score  # R² and accuracy are already positive/negative as appropriate
+                    comparison_score = cv_score  # Use actual score for comparison (higher is better)
+                    score_type = "R² or Accuracy (higher is better)"
                 
                 grid_results[name] = {
                     'model': grid_search,
@@ -1095,13 +1110,13 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
                     'time': training_time
                 }
                 
-                # Update best model (use display_score for both to ensure consistency)
-                if display_score > best_model_score:
+                # Update best model using comparison_score
+                if comparison_score > best_model_score:
                     best_model_name = name
-                    best_model_score = display_score
+                    best_model_score = comparison_score
                 
-                # Log results
-                results["logs"].append(f"   ✅ Score: {display_score:.4f}")
+                # Log results with clear score interpretation
+                results["logs"].append(f"   ✅ Score: {display_score:.4f} ({score_type})")
                 results["logs"].append(f"   ⏱️ Time: {training_time:.2f}s")
                 results["logs"].append(f"   🔧 Best params: {best_params}")
                 
@@ -1139,6 +1154,17 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         
         results["best_model"] = best_model_name
         results["model_scores"] = {name: data.get('score', 0) for name, data in grid_results.items()}
+        
+        # Add scoring explanation
+        if task == 'regression':
+            scoring_explanation = "📊 Scoring Metric: R² Score (0 to 1, higher is better)"
+            results["logs"].append(f"\n{scoring_explanation}")
+            results["logs"].append("   • 1.0 = Perfect predictions")
+            results["logs"].append("   • 0.0 = Model performs as well as predicting the mean")
+            results["logs"].append("   • Negative values = Model performs worse than predicting the mean")
+        else:
+            scoring_explanation = "📊 Scoring Metric: Accuracy (0 to 1, higher is better)"
+            results["logs"].append(f"\n{scoring_explanation}")
         
         results["logs"].append(f"\n🥇 BEST MODEL: {best_model_name}")
         results["logs"].append(f"🎯 Best Score: {final_score:.4f}")
@@ -1187,14 +1213,17 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         
         elif task == 'regression':
             mae = mean_absolute_error(y_test, y_pred)
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
             r2 = r2_score(y_test, y_pred)
             
             results["metrics"]["mae"] = mae
+            results["metrics"]["mse"] = mse
             results["metrics"]["rmse"] = rmse
             results["metrics"]["r2"] = r2
             
             results["logs"].append(f"🎯 Test MAE: {mae:.4f}")
+            results["logs"].append(f"🎯 Test MSE: {mse:.4f}")
             results["logs"].append(f"🎯 Test RMSE: {rmse:.4f}")
             results["logs"].append(f"🎯 Test R²: {r2:.4f}")
 # ...existing code...
@@ -1325,20 +1354,24 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
             
         elif task == 'regression':
             mae = mean_absolute_error(y_test, y_pred)
-            rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+            mse = mean_squared_error(y_test, y_pred)
+            rmse = np.sqrt(mse)
             r2 = r2_score(y_test, y_pred)
             
             results["metrics"]["mae"] = mae
+            results["metrics"]["mse"] = mse
             results["metrics"]["rmse"] = rmse
             results["metrics"]["r2"] = r2
             
             mean_target = y_test.mean()
             mae_percent = (mae / mean_target) * 100
+            mse_percent = (mse / (mean_target**2)) * 100
             rmse_percent = (rmse / mean_target) * 100
             
             # Simple evaluation without log transformation issues
             results["logs"].append("\n📊 Model Evaluation Metrics:\n")
             results["logs"].append(f"🧮 MAE: {mae:.2f} ({mae_percent:.2f}%) → On average, predictions are off by this much.")
+            results["logs"].append(f"📐 MSE: {mse:.2f} ({mse_percent:.2f}%) → Mean squared error (squared units).")
             results["logs"].append(f"📏 RMSE: {rmse:.2f} ({rmse_percent:.2f}%) → Penalizes large errors more. Shows how bad the worst predictions can get.")
             results["logs"].append(f"📈 R² Score: {r2:.4f} → The model explains {r2*100:.2f}% of the variation in the actual values.")
             
@@ -1369,7 +1402,13 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
             results["logs"].append(f"\n📊 Model Performance Breakdown:")
             results["logs"].append(f"   MAE: {mae:.2f} ({(mae/target_mean)*100:.2f}% of target mean)")
             results["logs"].append(f"   RMSE: {rmse:.2f} ({(rmse/target_mean)*100:.2f}% of target mean)")
-            results["logs"].append(f"   R² Score: {r2:.4f} ({r2*100:.2f}% variance explained)")
+            
+            # R² Score with interpretation
+            if r2 >= 0:
+                results["logs"].append(f"   R² Score: {r2:.4f} ({r2*100:.2f}% variance explained)")
+            else:
+                results["logs"].append(f"   R² Score: {r2:.4f} (NEGATIVE - model worse than predicting mean)")
+                results["logs"].append(f"   ⚠️  Negative R² means the model performs worse than simply predicting the target mean")
             
             # Performance interpretation
             if abs(mae/target_mean) < 0.1:
@@ -1513,7 +1552,7 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
             else:
                 mae_score = 1
             
-            # R² Score (direct mapping)
+            # R² Score (handles negative values properly)
             if r2 >= 0.9:
                 r2_value = 10
             elif r2 >= 0.8:
@@ -1532,8 +1571,10 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
                 r2_value = 3
             elif r2 >= 0.1:
                 r2_value = 2
-            else:
+            elif r2 >= 0:
                 r2_value = 1
+            else:  # Negative R² scores (worse than predicting the mean)
+                r2_value = 0
             
             # RMSE Score (based on % of target mean)
             rmse_percent = (rmse/target_mean) * 100
@@ -1784,6 +1825,15 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         results["logs"].append(f"\n🎯 BOTTOM LINE:")
         results["logs"].append(f"   Your model scores {overall_score:.1f}/10 considering data complexity!")
         results["logs"].append(f"   Perfect 10/10 scores are like unicorns - beautiful in theory, but good luck finding one in the wild! 🦄")
+        
+        # Add scoring clarification for regression
+        if task == 'regression':
+            results["logs"].append(f"\n📊 SCORING NOTE FOR REGRESSION:")
+            results["logs"].append(f"   • Cross-validation uses R² score (coefficient of determination)")
+            results["logs"].append(f"   • R² ranges from -∞ to 1.0, where 1.0 is perfect prediction")
+            results["logs"].append(f"   • R² = 0 means the model predicts as well as the target mean")
+            results["logs"].append(f"   • Negative R² means the model is worse than predicting the mean")
+            results["logs"].append(f"   • Your best model R² score: {final_score:.4f}")
         
         return results
 
