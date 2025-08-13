@@ -29,7 +29,7 @@ try:
     results = run_automl_pipeline(
         df=iris_df,
         target_col='species',
-        model_choice='gridsearch'
+        model_choice='utility'
     )
     
     print("\n✅ RESULTS:")
@@ -61,7 +61,7 @@ try:
     results = run_automl_pipeline(
         df=housing_df,
         target_col='price',
-        model_choice='gridsearch'
+        model_choice='utility'
     )
     
     print("\n✅ RESULTS:")

@@ -19,7 +19,7 @@ except ImportError as e:
     sns = None
 
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import  ConfusionMatrixDisplay
 from sklearn.model_selection import train_test_split, cross_val_score, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
@@ -236,11 +236,12 @@ def validate_and_clean_target(X, y, task_type, max_bad_ratio=0.01, auto_clean=Tr
     total = len(y)
 
     nan_mask = y.isnull()
-    zero_mask = (y == 0) if task_type == "regression" else pd.Series([False] * total, index=y.index)
-    bad_mask = nan_mask | zero_mask
+    zero_mask = (y == 0) if task_type == "regression" else pd.Series([False] * total, index=y.index) 
+    #[False] * total creates a list of False values of length = total rows.
+    bad_mask = nan_mask | zero_mask  #combines both — these rows will be removed
 
     bad_count = bad_mask.sum()
-    bad_ratio = bad_count / total
+    bad_ratio = bad_count / total 
     
     cleaning_log = []
 
@@ -265,7 +266,7 @@ def validate_and_clean_target(X, y, task_type, max_bad_ratio=0.01, auto_clean=Tr
         else:
             cleaning_log.append("⚠️ Not cleaning — high bad ratio detected.")
             return X, y, cleaning_log
-# ...existing code...
+
 
 def add_interaction_features(df, numeric_cols):
     for i in range(len(numeric_cols)):
@@ -347,9 +348,26 @@ def plot_residuals(model, X_test, y_test):
     plt.tight_layout()
     return fig
 
-def comprehensive_shap_analysis(pipeline, X_train, X_test, task_type="classification", max_samples=100):
+def comprehensive_shap_analysis(pipeline, X_train, X_test, task_type, max_samples=100):
     """
-    Complete SHAP analysis function from notebook - exact replica
+    Enhanced SHAP analysis function with explicit task-type handling for both classification and regression.
+    
+    Parameters:
+    -----------
+    pipeline : sklearn.Pipeline
+        Trained ML pipeline with preprocessor and model
+    X_train : pd.DataFrame or np.array
+        Training features
+    X_test : pd.DataFrame or np.array  
+        Test features
+    task_type : str
+        Task type: "classification" or "regression" (detected by main pipeline)
+    max_samples : int, default=100
+        Maximum samples to use for SHAP analysis (for performance)
+        
+    Returns:
+    --------
+    dict : SHAP analysis results with feature importance, explainer type, and logs
     """
     shap_results = {
         "explainer_type": None,
@@ -357,15 +375,31 @@ def comprehensive_shap_analysis(pipeline, X_train, X_test, task_type="classifica
         "top_features": None,
         "shap_values": None,
         "feature_names": None,
+        "task_detected": None,
+        "model_type": None,
         "analysis_logs": []
     }
     
     try:
-        shap_results["analysis_logs"].append("🔍 Starting comprehensive SHAP analysis...")
+        shap_results["analysis_logs"].append("🔍 Starting enhanced SHAP analysis...")
         
         # Get the model from pipeline
         model = pipeline.named_steps['model']
         preprocessor = pipeline.named_steps['preprocessor']
+        # The named_steps dictionary would contain:
+        # 'preprocessor': The preprocessing pipeline (handles data cleaning, encoding, scaling, etc.)
+        # 'model': The actual machine learning model (Random Forest, Logistic Regression, etc.)
+        # Like defined in Pipeline
+        
+        # Detect model type for better explainer selection
+        model_name = type(model).__name__
+        shap_results["model_type"] = model_name
+        shap_results["analysis_logs"].append(f"📊 Model detected: {model_name}")
+        
+        # Task type is passed from the main pipeline (already detected)
+        detected_task = task_type
+        shap_results["analysis_logs"].append(f"🎯 Task type: {detected_task}")
+        shap_results["task_detected"] = detected_task
         
         # Transform data
         X_transformed = preprocessor.transform(X_train)
@@ -380,63 +414,97 @@ def comprehensive_shap_analysis(pipeline, X_train, X_test, task_type="classifica
             feature_names = [f"feature_{i}" for i in range(X_transformed.shape[1])]
         
         shap_results["feature_names"] = feature_names
+        shap_results["analysis_logs"].append(f"📝 Features after preprocessing: {len(feature_names)}")
         
         # Limit samples for performance
         n_samples = min(max_samples, X_transformed.shape[0])
         X_sample = X_transformed[:n_samples]
         X_test_sample = X_test_transformed[:min(50, X_test_transformed.shape[0])]
         
-        # Try different explainers based on model type
+        shap_results["analysis_logs"].append(f"🔢 Using {n_samples} training samples and {len(X_test_sample)} test samples")
+        
+        # Smart explainer selection based on model type and task
         explainer = None
         shap_values = None
         
-        # 1. Try TreeExplainer first (for tree-based models)
-        if hasattr(model, 'feature_importances_'):
+        # Define tree-based models
+        tree_models = ['RandomForest', 'GradientBoosting', 'XGB', 'LightGBM', 'DecisionTree', 'AdaBoost']
+        linear_models = ['LinearRegression', 'LogisticRegression', 'Ridge', 'Lasso', 'SGD']
+        
+        # 1. TreeExplainer for tree-based models (supports both classification and regression)
+        if any(tree_name in model_name for tree_name in tree_models) or hasattr(model, 'feature_importances_'):
             try:
-                shap_results["analysis_logs"].append("Trying TreeExplainer...")
+                shap_results["analysis_logs"].append(f"🌳 Trying TreeExplainer for {detected_task}...")
                 explainer = shap.TreeExplainer(model)
                 shap_values = explainer(X_sample)
                 shap_results["explainer_type"] = "TreeExplainer"
-                shap_results["analysis_logs"].append("✅ TreeExplainer successful")
+                shap_results["analysis_logs"].append("✅ TreeExplainer successful - optimal for tree models")
             except Exception as e:
-                shap_results["analysis_logs"].append(f"TreeExplainer failed: {str(e)}")
+                shap_results["analysis_logs"].append(f"❌ TreeExplainer failed: {str(e)}")
         
-        # 2. Try LinearExplainer (for linear models)
-        if explainer is None and hasattr(model, 'coef_'):
+        # 2. LinearExplainer for linear models (supports both classification and regression)
+        if explainer is None and (any(linear_name in model_name for linear_name in linear_models) or hasattr(model, 'coef_')):
             try:
-                shap_results["analysis_logs"].append("Trying LinearExplainer...")
+                shap_results["analysis_logs"].append(f"📏 Trying LinearExplainer for {detected_task}...")
                 explainer = shap.LinearExplainer(model, X_sample)
                 shap_values = explainer(X_test_sample)
                 shap_results["explainer_type"] = "LinearExplainer"
-                shap_results["analysis_logs"].append("✅ LinearExplainer successful")
+                shap_results["analysis_logs"].append("✅ LinearExplainer successful - optimal for linear models")
             except Exception as e:
-                shap_results["analysis_logs"].append(f"LinearExplainer failed: {str(e)}")
+                shap_results["analysis_logs"].append(f"❌ LinearExplainer failed: {str(e)}")
         
-        # 3. Fallback to KernelExplainer (universal but slower)
+        # 3. KernelExplainer as universal fallback (works for any model type and task)
         if explainer is None:
             try:
-                shap_results["analysis_logs"].append("Trying KernelExplainer (may take longer)...")
+                shap_results["analysis_logs"].append(f"🔮 Trying KernelExplainer for {detected_task} (universal but slower)...")
                 background = X_sample[:min(25, len(X_sample))]
-                explainer = shap.KernelExplainer(model.predict, background)
+                
+                # Use appropriate prediction function based on task
+                if detected_task == "classification" and hasattr(model, 'predict_proba'):
+                    predict_fn = lambda x: model.predict_proba(x)[:, 1] if model.predict_proba(x).shape[1] == 2 else model.predict_proba(x)
+                    shap_results["analysis_logs"].append("🎲 Using predict_proba for classification")
+                else:
+                    predict_fn = model.predict
+                    shap_results["analysis_logs"].append(f"🎯 Using predict for {detected_task}")
+                
+                explainer = shap.KernelExplainer(predict_fn, background)
                 shap_values = explainer(X_test_sample)
                 shap_results["explainer_type"] = "KernelExplainer"
-                shap_results["analysis_logs"].append("✅ KernelExplainer successful")
+                shap_results["analysis_logs"].append("✅ KernelExplainer successful - universal compatibility")
             except Exception as e:
-                shap_results["analysis_logs"].append(f"KernelExplainer failed: {str(e)}")
+                shap_results["analysis_logs"].append(f"❌ KernelExplainer failed: {str(e)}")
                 return shap_results
         
         if shap_values is None:
             shap_results["analysis_logs"].append("❌ All SHAP explainers failed")
             return shap_results
         
-        # Calculate feature importance
+        # Enhanced feature importance calculation with task-specific handling
         if hasattr(shap_values, 'values'):
-            if len(shap_values.values.shape) == 3:  # multiclass
-                shap_array = np.abs(shap_values.values).mean(axis=(0, 2))
-            else:  # binary or regression
-                shap_array = np.abs(shap_values.values).mean(axis=0)
+            shap_array_raw = shap_values.values #(common with TreeExplainer) 
         else:
-            shap_array = np.abs(shap_values).mean(axis=0)
+            shap_array_raw = shap_values
+            
+        # Handle different SHAP value shapes based on task and model output
+        if len(shap_array_raw.shape) == 3:  # Multiclass classification
+            shap_array = np.abs(shap_array_raw).mean(axis=(0, 2))
+            shap_results["analysis_logs"].append("📊 Multiclass classification - averaging across samples and classes")
+        elif len(shap_array_raw.shape) == 2:  # Binary classification or regression
+            shap_array = np.abs(shap_array_raw).mean(axis=0)
+            if detected_task == "classification":
+                shap_results["analysis_logs"].append("📊 Binary classification - averaging across samples")
+            else:
+                shap_results["analysis_logs"].append("📊 Regression - averaging across samples")
+        else:
+            shap_results["analysis_logs"].append("⚠️ Unexpected SHAP values shape, using fallback calculation")
+            shap_array = np.abs(shap_array_raw).flatten()
+        
+        # Ensure we have the right number of features
+        if len(shap_array) != len(feature_names):
+            shap_results["analysis_logs"].append(f"⚠️ SHAP array length ({len(shap_array)}) doesn't match features ({len(feature_names)})")
+            min_length = min(len(shap_array), len(feature_names))
+            shap_array = shap_array[:min_length]
+            feature_names = feature_names[:min_length]
         
         # Feature importance ranking
         feature_importance = shap_array.tolist()
@@ -446,20 +514,34 @@ def comprehensive_shap_analysis(pipeline, X_train, X_test, task_type="classifica
         shap_results["top_features"] = top_feature_indices.tolist()
         shap_results["shap_values"] = shap_values
         
-        # Log top features
-        shap_results["analysis_logs"].append("\n🎯 Top 10 Most Important Features:")
+        # Enhanced logging with task-specific insights
+        shap_results["analysis_logs"].append(f"\n🎯 Top 10 Most Important Features for {detected_task.title()}:")
+        
+        total_importance = shap_array.sum()
         for i, feat_idx in enumerate(top_feature_indices):
             importance = shap_array[feat_idx]
             feat_name = feature_names[feat_idx] if feat_idx < len(feature_names) else f"feature_{feat_idx}"
-            score = min(10, importance * 10)  # Scale to 1-10
-            shap_results["analysis_logs"].append(f"  {i+1}. {feat_name}: {importance:.4f} (Score: {score:.1f}/10)")
+            importance_pct = (importance / total_importance) * 100 if total_importance > 0 else 0
+            score = min(10, (importance / shap_array.max()) * 10) if shap_array.max() > 0 else 0
+            
+            shap_results["analysis_logs"].append(
+                f"  {i+1}. {feat_name}: {importance:.4f} ({importance_pct:.1f}%) [Score: {score:.1f}/10]"
+            )
         
-        shap_results["analysis_logs"].append(f"\n✅ SHAP analysis completed using {shap_results['explainer_type']}")
+        # Task-specific summary
+        if detected_task == "classification":
+            shap_results["analysis_logs"].append(f"\n✅ Classification SHAP analysis completed using {shap_results['explainer_type']}")
+            shap_results["analysis_logs"].append("📈 Higher values indicate stronger influence on class prediction")
+        else:
+            shap_results["analysis_logs"].append(f"\n✅ Regression SHAP analysis completed using {shap_results['explainer_type']}")
+            shap_results["analysis_logs"].append("📈 Higher values indicate stronger influence on target value prediction")
         
     except ImportError:
         shap_results["analysis_logs"].append("⚠️ SHAP not installed. Install with: pip install shap")
     except Exception as e:
         shap_results["analysis_logs"].append(f"❌ SHAP analysis failed: {str(e)}")
+        import traceback
+        shap_results["analysis_logs"].append(f"🔍 Error details: {traceback.format_exc()}")
     
     return shap_results
 
@@ -509,7 +591,7 @@ def auto_feature_refinement_after_shap(X_train, X_test, shap_results, importance
     refinement_logs.append(f"✅ Feature refinement completed: {X_train.shape[1]} → {X_train_refined.shape[1]} features")
     
     # Log dropped features
-    if len(low_importance_indices) <= 10:  # Only show if not too many
+    if len(low_importance_indices) <= 5:  # Only show if not too many
         refinement_logs.append("🗑️ Dropped low-importance features:")
         for idx in low_importance_indices:
             feat_name = feature_names[idx] if idx < len(feature_names) else f"feature_{idx}"
@@ -518,9 +600,9 @@ def auto_feature_refinement_after_shap(X_train, X_test, shap_results, importance
     
     return X_train_refined, X_test_refined, refinement_logs
 
-def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_regression=False, selected_class_for_roc=None):
+def run_automl_pipeline(df, target_col, model_choice='utility', force_clean_regression=False, selected_class_for_roc=None):
     """
-    Complete AutoML Pipeline - EXACT replica of your 1600+ line notebook
+    Complete AutoML Pipeline with intelligent model selection strategies
     
     Parameters:
     -----------
@@ -528,8 +610,8 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         Input dataset
     target_col : str
         Name of target column
-    model_choice : str, default='gridsearch'
-        Model selection strategy: 'gridsearch', 'accuracy', 'utility'
+    model_choice : str, default='utility'
+        Model selection strategy: 'utility' (comprehensive) or 'speed' (fast & smart)
     force_clean_regression : bool, default=False
         Force clean regression targets even with high bad ratio
     selected_class_for_roc : str, optional
@@ -554,6 +636,18 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         "class_mapping": [],
         "task": None
     }
+
+    # Normalize model_choice to handle legacy or unknown inputs
+    legacy_map_utility = {"gridsearch", "full", "all", "comprehensive", "utility"}
+    legacy_map_speed = {"speed", "fast", "quick", "smart"}
+    mc_lower = str(model_choice).strip().lower() if model_choice is not None else "utility"
+    if mc_lower in legacy_map_utility:
+        model_choice = 'utility'
+    elif mc_lower in legacy_map_speed:
+        model_choice = 'speed'
+    else:
+        results["logs"].append(f"⚠️ Unknown model_choice '{model_choice}' – defaulting to 'utility'. Use 'utility' or 'speed'.")
+        model_choice = 'utility'
     
     # Phase 1: Feature Detection (EXACT from notebook)
     results["logs"].append("🔍 Starting Feature Detection...")
@@ -896,12 +990,16 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
         results["logs"].append("\n⚠️ Skipping feature refinement - SHAP analysis incomplete")
         use_refined_features = False
     
-    # Phase 15: Advanced Models Setup (EXACT from notebook)
-    if model_choice in ['gridsearch', 'accuracy', 'utility']:
-        results["logs"].append("\n🔧 Setting up advanced models with GridSearchCV...")
+    # Phase 15: Smart Model Selection Strategy
+    # Predefine to avoid UnboundLocalError in unexpected branches
+    advanced_models = {}
+    param_grids = {}
+    if model_choice == 'utility':
+        results["logs"].append("\n🔧 UTILITY MODE: Comprehensive analysis with all models")
         results["logs"].append("="*60)
+        results["logs"].append("📊 Running full GridSearchCV on all 13 models for maximum accuracy...")
         
-        # Advanced models setup (EXACT from notebook)
+        # Advanced models setup - Full comprehensive analysis
         if task == 'classification':
             advanced_models = {
                 'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
@@ -1022,210 +1120,337 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
                 }
             }
 
-        results["logs"].append(f"✅ Advanced model setup completed:")
-        results["logs"].append(f"   • {len(advanced_models)} models configured")
-        results["logs"].append(f"   • Parameter grids defined for tuning")
-        # ...existing code...
-        results["logs"].append(f"   • Ready for GridSearchCV execution")
-        
-        # Phase 16: GridSearchCV Execution (EXACT from notebook)
-        results["logs"].append("\n🚀 Running GridSearchCV on all models...")
+    elif model_choice == 'speed':
+        results["logs"].append("\n⚡ SPEED MODE: Smart and fast model selection")
         results["logs"].append("="*60)
         
-        grid_results = {}
-        best_model_name = None
-        # Initialize based on scoring metric
-        if scoring.startswith('neg'):
-            best_model_score = 0  # For negative error metrics, 0 is worst when converted to positive
-        elif scoring == 'r2':
-            best_model_score = -float('inf')  # R² can be negative, so start from negative infinity
-        else:
-            best_model_score = 0  # For accuracy and other positive metrics
+        # Determine best model family from Phase 1 results
+        best_simple_model_type = type(simple_models[best_simple_model]).__name__
+        results["logs"].append(f"🎯 Phase 1 winner: {best_simple_model} ({best_simple_model_type})")
         
-        for name, model in advanced_models.items():
-            results["logs"].append(f"\n🔍 GridSearchCV: {name}")
-            
-            try:
-                # Create pipeline
-                pipeline = Pipeline([
-                    ('preprocessor', preprocessor),
-                    ('model', model)
-                ])
-                
-                # Get parameter grid
-                param_grid = param_grids.get(name, {})
-                
-                # Setup GridSearchCV
-                if param_grid:
-                    grid_search = GridSearchCV(
-                        pipeline, 
-                        param_grid, 
-                        cv=5, 
-                        scoring=scoring, 
-                        n_jobs=-1, 
-                        verbose=0
-                    )
-                else:
-                    # No parameters to tune, just use cross-validation
-                    grid_search = pipeline
-                
-                # Fit the model
-                start_time = time.time()
-                if hasattr(grid_search, 'fit'):
-                    grid_search.fit(X_train, y_train)
-                    
-                    if hasattr(grid_search, 'best_score_'):
-                        cv_score = grid_search.best_score_
-                        best_params = grid_search.best_params_
-                    else:
-                        # For models without parameter tuning
-                        scores = cross_val_score(grid_search, X_train, y_train, cv=5, scoring=scoring)
-                        cv_score = scores.mean()
-                        best_params = "No tuning required"
-                else:
-                    # Fallback for unusual cases
-                    scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring=scoring)
-                    cv_score = scores.mean()
-                    best_params = "No tuning required"
-                    grid_search = pipeline
-                
-                end_time = time.time()
-                training_time = end_time - start_time
-                
-                # Store results with proper score handling
-                if scoring.startswith('neg'):
-                    display_score = abs(cv_score)  # Convert negative error to positive for display
-                    comparison_score = display_score  # Use positive value for comparison (higher is better)
-                    score_type = "Error (lower is better, shown as positive)"
-                else:
-                    display_score = cv_score  # R² and accuracy are already positive/negative as appropriate
-                    comparison_score = cv_score  # Use actual score for comparison (higher is better)
-                    score_type = "R² or Accuracy (higher is better)"
-                
-                grid_results[name] = {
-                    'model': grid_search,
-                    'score': display_score,
-                    'cv_score': cv_score,
-                    'params': best_params,
-                    'time': training_time
+        # Select model family based on Phase 1 winner
+        if task == 'classification':
+            if 'Random' in best_simple_model_type or 'Forest' in best_simple_model:
+                # Tree-based family won
+                results["logs"].append("🌳 Selecting tree-based model family for speed optimization...")
+                advanced_models = {
+                    'Random Forest': RandomForestClassifier(random_state=42),
+                    'Gradient Boosting': GradientBoostingClassifier(random_state=42),
+                    'XGBoost': XGBClassifier(use_label_encoder=False, eval_metric='logloss', random_state=42)
+                }
+                param_grids = {
+                    'Random Forest': {
+                        'model__n_estimators': [50, 100],
+                        'model__max_depth': [None, 5, 10]
+                    },
+                    'Gradient Boosting': {
+                        'model__n_estimators': [50, 100],
+                        'model__learning_rate': [0.01, 0.1, 0.2]
+                    },
+                    'XGBoost': {
+                        'model__n_estimators': [50, 100],
+                        'model__max_depth': [3, 5, 7]
+                    }
+                }
+            elif 'Logistic' in best_simple_model_type or 'Logistic' in best_simple_model:
+                # Linear family won
+                results["logs"].append("📏 Selecting linear model family for speed optimization...")
+                advanced_models = {
+                    'Logistic Regression': LogisticRegression(max_iter=1000, random_state=42),
+                    'Ridge': Ridge(random_state=42),
+                    'SGD Classifier': SGDClassifier(max_iter=1000, tol=1e-3, random_state=42)
+                }
+                param_grids = {
+                    'Logistic Regression': {'model__C': [0.1, 1, 10]},
+                    'Ridge': {'model__alpha': [0.1, 1.0, 10.0]},
+                    'SGD Classifier': {
+                        'model__loss': ['log_loss', 'hinge'],
+                        'model__alpha': [0.0001, 0.001, 0.01]
+                    }
+                }
+            else:  # KNN or others
+                # Instance-based family
+                results["logs"].append("🔍 Selecting instance-based model family for speed optimization...")
+                advanced_models = {
+                    'KNN': KNeighborsClassifier(),
+                    'SVC': SVC(random_state=42),
+                    'MLP': MLPClassifier(max_iter=500, random_state=42)
+                }
+                param_grids = {
+                    'KNN': {'model__n_neighbors': [3, 5, 7]},
+                    'SVC': {
+                        'model__C': [0.1, 1, 10],
+                        'model__kernel': ['linear', 'rbf']
+                    },
+                    'MLP': {
+                        'model__hidden_layer_sizes': [(50,), (100,)],
+                        'model__activation': ['relu', 'tanh']
+                    }
                 }
                 
-                # Update best model using comparison_score
-                if comparison_score > best_model_score:
-                    best_model_name = name
-                    best_model_score = comparison_score
-                
-                # Log results with clear score interpretation
-                results["logs"].append(f"   ✅ Score: {display_score:.4f} ({score_type})")
-                results["logs"].append(f"   ⏱️ Time: {training_time:.2f}s")
-                results["logs"].append(f"   🔧 Best params: {best_params}")
-                
-            except Exception as e:
-                results["logs"].append(f"   ❌ Failed: {str(e)}")
-                grid_results[name] = {'error': str(e), 'score': 0}
-                continue
-        
-        # Phase 17: Model Selection and Final Training (EXACT from notebook)
-        if not grid_results or best_model_name is None:
-            results["logs"].append("❌ No models completed successfully")
-            results["summary"] = "All models failed during GridSearchCV"
-            return results
-        
-        results["logs"].append(f"\n🏆 GRIDSEARCHCV RESULTS:")
-        results["logs"].append("="*50)
-        
-        # Sort and display all results
-        sorted_results = sorted(
-            [(name, data) for name, data in grid_results.items() if 'score' in data and data['score'] > 0],
-            key=lambda x: x[1]['score'], 
-            reverse=True
-        )
-        
-        results["logs"].append("📊 Model Rankings:")
-        for i, (name, data) in enumerate(sorted_results):
-            score = data['score']
-            time_taken = data.get('time', 0)
-            results["logs"].append(f"   {i+1}. {name}: {score:.4f} ({time_taken:.1f}s)")
-        
-        # Get the best model
-        final_model = grid_results[best_model_name]['model']
-        final_score = grid_results[best_model_name]['score']
-        final_params = grid_results[best_model_name]['params']
-        
-        results["best_model"] = best_model_name
-        results["model_scores"] = {name: data.get('score', 0) for name, data in grid_results.items()}
-        
-        # Add scoring explanation
-        if task == 'regression':
-            scoring_explanation = "📊 Scoring Metric: R² Score (0 to 1, higher is better)"
-            results["logs"].append(f"\n{scoring_explanation}")
-            results["logs"].append("   • 1.0 = Perfect predictions")
-            results["logs"].append("   • 0.0 = Model performs as well as predicting the mean")
-            results["logs"].append("   • Negative values = Model performs worse than predicting the mean")
-        else:
-            scoring_explanation = "📊 Scoring Metric: Accuracy (0 to 1, higher is better)"
-            results["logs"].append(f"\n{scoring_explanation}")
-        
-        results["logs"].append(f"\n🥇 BEST MODEL: {best_model_name}")
-        results["logs"].append(f"🎯 Best Score: {final_score:.4f}")
-        results["logs"].append(f"🔧 Best Parameters: {final_params}")
-        
-        # Final model training (if it's a GridSearchCV object, it's already trained)
-        if hasattr(final_model, 'best_estimator_'):
-            final_pipeline = final_model.best_estimator_
-        else:
-            final_pipeline = final_model
-            
-        results["logs"].append("✅ Final model prepared for evaluation")
-        
-        # Phase 18: Model Evaluation (EXACT from notebook)
-        results["logs"].append("\n📊 FINAL MODEL EVALUATION")
-        results["logs"].append("="*50)
-        
-        # Make predictions
-        y_pred = final_pipeline.predict(X_test)
-        
-        if task == 'classification':
-            acc = accuracy_score(y_test, y_pred)
-            results["metrics"]["accuracy"] = acc
-            
-            results["logs"].append(f"🎯 Test Accuracy: {acc:.4f}")
-            
-            # Classification Report
-            try:
-                class_report = classification_report(y_test, y_pred)
-                results["logs"].append(f"\n📋 Classification Report:\n{class_report}")
-            except Exception as e:
-                results["logs"].append(f"⚠️ Classification report failed: {str(e)}")
-            
-            # Confusion Matrix Plot
-            try:
-                fig, ax = plt.subplots(figsize=(5, 4))
-                cm = confusion_matrix(y_test, y_pred)
-                disp = ConfusionMatrixDisplay(confusion_matrix=cm)
-                disp.plot(ax=ax, cmap='Blues')
-                ax.set_title(f'Confusion Matrix - {best_model_name}', fontsize=11)
-                plt.tight_layout()
-                results["plots"].append(fig)
-                results["logs"].append("✅ Confusion matrix plot created")
-            except Exception as e:
-                results["logs"].append(f"⚠️ Confusion matrix plot failed: {str(e)}")
-        
         elif task == 'regression':
-            mae = mean_absolute_error(y_test, y_pred)
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(y_test, y_pred)
+            if 'Random' in best_simple_model_type or 'Forest' in best_simple_model:
+                # Tree-based family won
+                results["logs"].append("🌳 Selecting tree-based model family for speed optimization...")
+                advanced_models = {
+                    'Random Forest': RandomForestRegressor(random_state=42),
+                    'Gradient Boosting': GradientBoostingRegressor(random_state=42),
+                    'XGBoost': XGBRegressor(random_state=42)
+                }
+                param_grids = {
+                    'Random Forest': {
+                        'model__n_estimators': [50, 100],
+                        'model__max_depth': [None, 5, 10]
+                    },
+                    'Gradient Boosting': {
+                        'model__n_estimators': [50, 100],
+                        'model__learning_rate': [0.01, 0.1, 0.2]
+                    },
+                    'XGBoost': {
+                        'model__n_estimators': [50, 100],
+                        'model__max_depth': [3, 5, 7]
+                    }
+                }
+            elif 'Linear' in best_simple_model_type or 'Linear' in best_simple_model:
+                # Linear family won
+                results["logs"].append("📏 Selecting linear model family for speed optimization...")
+                advanced_models = {
+                    'Linear Regression': LinearRegression(),
+                    'Ridge': Ridge(random_state=42),
+                    'Lasso': Lasso(random_state=42)
+                }
+                param_grids = {
+                    'Linear Regression': {},
+                    'Ridge': {'model__alpha': [0.1, 1.0, 10.0]},
+                    'Lasso': {'model__alpha': [0.1, 1.0, 10.0]}
+                }
+            else:  # KNN or others
+                # Instance-based family
+                results["logs"].append("🔍 Selecting instance-based model family for speed optimization...")
+                advanced_models = {
+                    'KNN': KNeighborsRegressor(),
+                    'SVR': SVR(),
+                    'MLP': MLPRegressor(max_iter=500, random_state=42)
+                }
+                param_grids = {
+                    'KNN': {'model__n_neighbors': [3, 5, 7]},
+                    'SVR': {
+                        'model__C': [0.1, 1, 10],
+                        'model__kernel': ['linear', 'rbf']
+                    },
+                    'MLP': {
+                        'model__hidden_layer_sizes': [(50,), (100,)],
+                        'model__activation': ['relu', 'tanh']
+                    }
+                }
+        
+        results["logs"].append(f"📊 Selected {len(advanced_models)} models from winning family for focused optimization")
+
+    # Continue with common GridSearchCV logic for both utility and speed modes
+
+    results["logs"].append(f"✅ Advanced model setup completed:")
+    results["logs"].append(f"   • {len(advanced_models)} models configured")
+    results["logs"].append(f"   • Parameter grids defined for tuning")
+    results["logs"].append(f"   • Ready for GridSearchCV execution")
+    
+    # Phase 16: GridSearchCV Execution for selected models
+    results["logs"].append(f"\n🚀 Running GridSearchCV on {len(advanced_models)} selected models...")
+    results["logs"].append("="*60)
+    
+    grid_results = {}
+    best_model_name = None
+    # Initialize based on scoring metric
+    if scoring.startswith('neg'):
+        best_model_score = 0  # For negative error metrics, 0 is worst when converted to positive
+    elif scoring == 'r2':
+        best_model_score = -float('inf')  # R² can be negative, so start from negative infinity
+    else:
+        best_model_score = 0  # For accuracy and other positive metrics
+    
+    for name, model in advanced_models.items():
+        results["logs"].append(f"\n🔍 GridSearchCV: {name}")
+        
+        try:
+            # Create pipeline
+            pipeline = Pipeline([
+                ('preprocessor', preprocessor),
+                ('model', model)
+            ])
             
-            results["metrics"]["mae"] = mae
-            results["metrics"]["mse"] = mse
-            results["metrics"]["rmse"] = rmse
-            results["metrics"]["r2"] = r2
+            # Get parameter grid
+            param_grid = param_grids.get(name, {})
             
-            results["logs"].append(f"🎯 Test MAE: {mae:.4f}")
-            results["logs"].append(f"🎯 Test MSE: {mse:.4f}")
-            results["logs"].append(f"🎯 Test RMSE: {rmse:.4f}")
-            results["logs"].append(f"🎯 Test R²: {r2:.4f}")
+            # Setup GridSearchCV
+            if param_grid:
+                grid_search = GridSearchCV(
+                    pipeline, 
+                    param_grid, 
+                    cv=5, 
+                    scoring=scoring, 
+                    n_jobs=-1, 
+                    verbose=0
+                )
+            else:
+                # No parameters to tune, just use cross-validation
+                grid_search = pipeline
+            
+            # Fit the model
+            start_time = time.time()
+            if hasattr(grid_search, 'fit'):
+                grid_search.fit(X_train, y_train)
+                
+                if hasattr(grid_search, 'best_score_'):
+                    cv_score = grid_search.best_score_
+                    best_params = grid_search.best_params_
+                else:
+                    # For models without parameter tuning
+                    scores = cross_val_score(grid_search, X_train, y_train, cv=5, scoring=scoring)
+                    cv_score = scores.mean()
+                    best_params = "No tuning required"
+            else:
+                # Fallback for unusual cases
+                scores = cross_val_score(pipeline, X_train, y_train, cv=5, scoring=scoring)
+                cv_score = scores.mean()
+                best_params = "No tuning required"
+                grid_search = pipeline
+            
+            end_time = time.time()
+            training_time = end_time - start_time
+            
+            # Store results with proper score handling
+            if scoring.startswith('neg'):
+                display_score = abs(cv_score)  # Convert negative error to positive for display
+                comparison_score = display_score  # Use positive value for comparison (higher is better)
+                score_type = "Error (lower is better, shown as positive)"
+            else:
+                display_score = cv_score  # R² and accuracy are already positive/negative as appropriate
+                comparison_score = cv_score  # Use actual score for comparison (higher is better)
+                score_type = "R² or Accuracy (higher is better)"
+            
+            grid_results[name] = {
+                'model': grid_search,
+                'score': display_score,
+                'cv_score': cv_score,
+                'params': best_params,
+                'time': training_time
+            }
+            
+            # Update best model using comparison_score
+            if comparison_score > best_model_score:
+                best_model_name = name
+                best_model_score = comparison_score
+            
+            # Log results with clear score interpretation
+            results["logs"].append(f"   ✅ Score: {display_score:.4f} ({score_type})")
+            results["logs"].append(f"   ⏱️ Time: {training_time:.2f}s")
+            results["logs"].append(f"   🔧 Best params: {best_params}")
+            
+        except Exception as e:
+            results["logs"].append(f"   ❌ Failed: {str(e)}")
+            grid_results[name] = {'error': str(e), 'score': 0}
+            continue
+    
+    # Phase 17: Model Selection and Final Training
+    if not grid_results or best_model_name is None:
+        results["logs"].append("❌ No models completed successfully")
+        results["summary"] = "All models failed during GridSearchCV"
+        return results
+    
+    results["logs"].append(f"\n🏆 GRIDSEARCHCV RESULTS:")
+    results["logs"].append("="*50)
+    
+    # Sort and display all results
+    sorted_results = sorted(
+        [(name, data) for name, data in grid_results.items() if 'score' in data and data['score'] > 0],
+        key=lambda x: x[1]['score'], 
+        reverse=True
+    )
+    
+    results["logs"].append("📊 Model Rankings:")
+    for i, (name, data) in enumerate(sorted_results):
+        score = data['score']
+        time_taken = data.get('time', 0)
+        results["logs"].append(f"   {i+1}. {name}: {score:.4f} ({time_taken:.1f}s)")
+    
+    # Get the best model
+    final_model = grid_results[best_model_name]['model']
+    final_score = grid_results[best_model_name]['score']
+    final_params = grid_results[best_model_name]['params']
+    
+    results["best_model"] = best_model_name
+    results["model_scores"] = {name: data.get('score', 0) for name, data in grid_results.items()}
+    
+    # Add scoring explanation
+    if task == 'regression':
+        scoring_explanation = "📊 Scoring Metric: R² Score (0 to 1, higher is better)"
+        results["logs"].append(f"\n{scoring_explanation}")
+        results["logs"].append("   • 1.0 = Perfect predictions")
+        results["logs"].append("   • 0.0 = Model performs as well as predicting the mean")
+        results["logs"].append("   • Negative values = Model performs worse than predicting the mean")
+    else:
+        scoring_explanation = "📊 Scoring Metric: Accuracy (0 to 1, higher is better)"
+        results["logs"].append(f"\n{scoring_explanation}")
+    
+    results["logs"].append(f"\n🥇 BEST MODEL: {best_model_name}")
+    results["logs"].append(f"🎯 Best Score: {final_score:.4f}")
+    results["logs"].append(f"🔧 Best Parameters: {final_params}")
+    
+    # Final model training (if it's a GridSearchCV object, it's already trained)
+    if hasattr(final_model, 'best_estimator_'):
+        final_pipeline = final_model.best_estimator_
+    else:
+        final_pipeline = final_model
+        
+    results["logs"].append("✅ Final model prepared for evaluation")
+    
+    # Phase 18: Model Evaluation
+    results["logs"].append("\n📊 FINAL MODEL EVALUATION")
+    results["logs"].append("="*50)
+    
+    # Make predictions
+    y_pred = final_pipeline.predict(X_test)
+    
+    if task == 'classification':
+        acc = accuracy_score(y_test, y_pred)
+        results["metrics"]["accuracy"] = acc
+        
+        results["logs"].append(f"🎯 Test Accuracy: {acc:.4f}")
+        
+        # Classification Report
+        try:
+            class_report = classification_report(y_test, y_pred)
+            results["logs"].append(f"\n📋 Classification Report:\n{class_report}")
+        except Exception as e:
+            results["logs"].append(f"⚠️ Classification report failed: {str(e)}")
+        
+        # Confusion Matrix Plot
+        try:
+            fig, ax = plt.subplots(figsize=(5, 4))
+            cm = confusion_matrix(y_test, y_pred)
+            disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+            disp.plot(ax=ax, cmap='Blues')
+            ax.set_title(f'Confusion Matrix - {best_model_name}', fontsize=11)
+            plt.tight_layout()
+            results["plots"].append(fig)
+            results["logs"].append("✅ Confusion matrix plot created")
+        except Exception as e:
+            results["logs"].append(f"⚠️ Confusion matrix plot failed: {str(e)}")
+    
+    elif task == 'regression':
+        mae = mean_absolute_error(y_test, y_pred)
+        mse = mean_squared_error(y_test, y_pred)
+        rmse = np.sqrt(mse)
+        r2 = r2_score(y_test, y_pred)
+        
+        results["metrics"]["mae"] = mae
+        results["metrics"]["mse"] = mse
+        results["metrics"]["rmse"] = rmse
+        results["metrics"]["r2"] = r2
+        
+        results["logs"].append(f"🎯 Test MAE: {mae:.4f}")
+        results["logs"].append(f"🎯 Test MSE: {mse:.4f}")
+        results["logs"].append(f"🎯 Test RMSE: {rmse:.4f}")
+        results["logs"].append(f"🎯 Test R²: {r2:.4f}")
 # ...existing code...
 
         # Phase 19: ROC and PR Curves for Classification (EXACT from notebook)
@@ -1353,34 +1578,12 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
             results["summary"] = f"Best Model: {results['best_model']}, Accuracy: {acc:.4f}"
             
         elif task == 'regression':
-            mae = mean_absolute_error(y_test, y_pred)
-            mse = mean_squared_error(y_test, y_pred)
-            rmse = np.sqrt(mse)
-            r2 = r2_score(y_test, y_pred)
-            
-            results["metrics"]["mae"] = mae
-            results["metrics"]["mse"] = mse
-            results["metrics"]["rmse"] = rmse
-            results["metrics"]["r2"] = r2
-            
-            mean_target = y_test.mean()
-            mae_percent = (mae / mean_target) * 100
-            mse_percent = (mse / (mean_target**2)) * 100
-            rmse_percent = (rmse / mean_target) * 100
-            
-            # Simple evaluation without log transformation issues
-            results["logs"].append("\n📊 Model Evaluation Metrics:\n")
-            results["logs"].append(f"🧮 MAE: {mae:.2f} ({mae_percent:.2f}%) → On average, predictions are off by this much.")
-            results["logs"].append(f"📐 MSE: {mse:.2f} ({mse_percent:.2f}%) → Mean squared error (squared units).")
-            results["logs"].append(f"📏 RMSE: {rmse:.2f} ({rmse_percent:.2f}%) → Penalizes large errors more. Shows how bad the worst predictions can get.")
-            results["logs"].append(f"📈 R² Score: {r2:.4f} → The model explains {r2*100:.2f}% of the variation in the actual values.")
-            
             # Regression plots (EXACT from notebook)
             residuals_fig = plot_residuals(final_pipeline, X_test, y_test)
             pred_vs_actual_fig = plot_predicted_vs_actual(final_pipeline, X_test, y_test)
             results["plots"].extend([residuals_fig, pred_vs_actual_fig])
             
-            results["summary"] = f"Best Model: {results['best_model']}, MAE: {mae:.2f}, RMSE: {rmse:.2f}, R²: {r2:.4f}"
+            results["summary"] = f"Best Model: {results['best_model']}, MAE: {results['metrics']['mae']:.2f}, RMSE: {results['metrics']['rmse']:.2f}, R²: {results['metrics']['r2']:.4f}"
         
         # Phase 20: Comprehensive Diagnostic Analysis (EXACT from notebook)
         results["logs"].append("\n🔍 COMPREHENSIVE DIAGNOSTIC ANALYSIS")
@@ -1872,7 +2075,7 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
 #         results = run_automl_pipeline(
 #             df=iris_df,
 #             target_col='species',
-#             model_choice='gridsearch'
+#             model_choice='utility'
 #         )
         
 #         print(f"\n✅ Classification Test Results:")
@@ -1911,7 +2114,7 @@ def run_automl_pipeline(df, target_col, model_choice='gridsearch', force_clean_r
 #         results = run_automl_pipeline(
 #             df=boston_df,
 #             target_col='price',
-#             model_choice='gridsearch'
+#             model_choice='utility'
 #         )
         
 #         print(f"\n✅ Regression Test Results:")

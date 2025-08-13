@@ -439,23 +439,19 @@ st.sidebar.header("🔧 Model Configuration")
 with st.sidebar.expander("🎯 Model Selection Strategy", expanded=True):
     model_choice = st.selectbox(
         "Strategy", 
-        ["gridsearch", "accuracy", "utility"],  # Three different strategies
+        ["utility", "speed"],  # Two clear strategies
+        index=0,  # Default to utility
         help="""Choose your model selection strategy:
 
-🔬 **gridsearch**: Full hyperparameter tuning (recommended)
-- Most thorough optimization
-- Best overall performance
-- Longest training time
+🔬 **utility**: Comprehensive analysis (recommended)
+- All 13 models with full hyperparameter tuning
+- Maximum accuracy and thorough evaluation
+- Takes 10+ minutes but gives best results
 
-🎯 **accuracy**: Pure performance focus
-- Selects highest scoring model
-- No time considerations
-- Good for maximum accuracy
-
-⚡ **utility**: Balanced approach
-- 70% performance + 30% speed
-- Practical for production use
-- May choose faster models over marginal accuracy gains"""
+⚡ **speed**: Fast and smart
+- Top model family from initial testing + hyperparameter tuning
+- Good accuracy with reasonable time (3-5 minutes)
+- Intelligent selection based on data characteristics"""
     )
 
 # Advanced Settings for power users

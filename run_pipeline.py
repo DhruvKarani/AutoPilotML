@@ -32,7 +32,7 @@ def main():
         
         # Optional parameters
         print("\n⚙️ Optional settings (press Enter to use defaults):")
-        model_choice = input("Model choice (gridsearch/accuracy/utility) [gridsearch]: ").strip() or "gridsearch"
+        model_choice = input("Model choice (utility/speed) [utility]: ").strip() or "utility"
         force_clean = input("Force clean regression targets? (y/n) [n]: ").strip().lower() == 'y'
         roc_class = input("Class for ROC curve (multiclass only): ").strip() or None
         
