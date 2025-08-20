@@ -1,7 +1,0 @@
-streamlit
-pandas
-numpy
-scikit-learn
-shap
-matplotlib
-https://ai-for-all.in/#/badge?id=U2FsdGVkX189ITboscp4mC9lj6mlnzs1L2a3S4hfh6qR82GAjYAe1Q2u3A4l
