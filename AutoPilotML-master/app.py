@@ -961,11 +961,11 @@ else:
     
     # Define local datasets with their file paths and display information
     sample_datasets = [
-        {"name": "❤️ Heart Disease", "description": "Heart Disease prediction", "file": "heart.csv", "target_hint": "target"},
+        {"name": "❤️ Heart Disease", "description": "Heart Disease prediction", "file": "heart.csv", "target_hint": "HeartDisease"},
         {"name": "🧬 Life Insurance", "description": "Insurance claim prediction", "file": "life_insurance.csv", "target_hint": "claim"},
-        {"name": "🧊🚢 Titanic", "description": "Survival prediction", "file": "titanic.csv", "target_hint": "Survived"},
-        {"name": "🏦 Bank Marketing", "description": "Campaign success prediction", "file": "bank.csv", "target_hint": "y"},
-        {"name": "🌸 Iris", "description": "Classic flower classification", "file": "iris.csv", "target_hint": "species"},
+        {"name": "🦀 Breast Cancer", "description": "Breast cancer classification", "file": "breast_cancer_dataset.csv", "target_hint": "diagnosis"},
+        {"name": "✈️ Air Quality", "description": "Air quality index prediction", "file": "Air Quality.csv", "target_hint": "AQI"},
+        {"name": "🧊🚢 Titanic", "description": "Survival prediction", "file": "titanic.csv", "target_hint": "Survived"},        
         {"name": "🏠 Housing", "description": "Price prediction", "file": "housing.csv", "target_hint": "median_house_value"},
     ]
     
