@@ -825,23 +825,6 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
                             st.text(log)
 
                 # --- Model Download Section ---
-                # Allows users to download the trained model for use in other applications
-                st.subheader("💾 Download Trained Model")
-                
-                # Check if model file exists
-                if os.path.exists(results['model_path']):
-                    # Read the model file and create download button
-                    with open(results['model_path'], "rb") as f:
-                        st.download_button(
-                            label="⬇️ Download Best Model (.pkl)",
-                            data=f.read(),  # File contents
-                            file_name=f"{results['best_model'].replace(' ', '_')}_model.pkl",  # Clean filename
-                            mime="application/octet-stream"  # Binary file type
-                        )
-                    st.success(f"✅ Model saved at: {results['model_path']}")
-                else:
-                    st.error("❌ Model file not found")
-
                 # --- Model Comparison Chart ---
                 # Shows performance of all tested models for comparison
                 if results['model_scores']:
@@ -853,6 +836,20 @@ if uploaded_file is not None or (hasattr(st.session_state, 'dataset_loaded_from_
                     scores_df = scores_df.sort_values('Score', ascending=False)
                     # Display as horizontal bar chart
                     st.bar_chart(scores_df.set_index('Model'))
+
+                # --- Model Download Section (Moved to End) ---
+                st.subheader("💾 Download Trained Model")
+                if os.path.exists(results['model_path']):
+                    with open(results['model_path'], "rb") as f:
+                        st.download_button(
+                            label="⬇️ Download Best Model (.pkl)",
+                            data=f.read(),
+                            file_name=f"{results['best_model'].replace(' ', '_')}_model.pkl",
+                            mime="application/octet-stream"
+                        )
+                    st.success(f"✅ Model saved at: {results['model_path']}")
+                else:
+                    st.error("❌ Model file not found")
 
             except Exception as e:
                 # Error handling - shows detailed error information if pipeline fails
@@ -962,10 +959,10 @@ else:
     # Define local datasets with their file paths and display information
     sample_datasets = [
         {"name": "❤️ Heart Disease", "description": "Heart Disease prediction", "file": "heart.csv", "target_hint": "HeartDisease"},
-        {"name": "🧬 Life Insurance", "description": "Insurance claim prediction", "file": "life_insurance.csv", "target_hint": "claim"},
+        {"name": "🧬 Life Insurance", "description": "Insurance charges prediction", "file": "life_insurance.csv", "target_hint": "claim"},
         {"name": "🦀 Breast Cancer", "description": "Breast cancer classification", "file": "breast_cancer_dataset.csv", "target_hint": "diagnosis"},
         {"name": "✈️ Air Quality", "description": "Air quality index prediction", "file": "Air Quality.csv", "target_hint": "AQI"},
-        {"name": "🧊🚢 Titanic", "description": "Survival prediction", "file": "titanic.csv", "target_hint": "Survived"},        
+        {"name": "🌸 Iris", "description": "Flower species classification", "file": "iris.csv", "target_hint": "species"},
         {"name": "🏠 Housing", "description": "Price prediction", "file": "housing.csv", "target_hint": "median_house_value"},
     ]
     
